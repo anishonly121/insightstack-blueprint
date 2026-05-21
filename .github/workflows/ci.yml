@@ -13,51 +13,57 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: insightstack
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/insightstack
       DIRECT_URL: postgresql://postgres:postgres@localhost:5432/insightstack
-      JWT_SECRET: ci-placeholder-jwt-secret
+      JWT_SECRET: ci-placeholder-jwt-secret-32-chars-min
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_APP_NAME: InsightStack
       OPENAI_API_KEY: ""
       SENDGRID_API_KEY: ""
       SENDGRID_FROM_EMAIL: no-reply@example.com
       SENDGRID_TEMPLATE_RESET_PASSWORD: d-placeholder-template-id
-      SENDGRID_TEMPLATE_ALERT: ""
-      SENDGRID_PASSWORD_RESET_TEMPLATE_ID: ""
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Resolve Node version
-        id: node-version
-        run: |
-          if [ -f .nvmrc ]; then
-            echo "value=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=20" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ steps.node-version.outputs.value }}
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
 
       - name: Type check
         run: npx tsc --noEmit
 
       - name: Prisma validate
         run: npx prisma validate
+
+      - name: Run migrations
+        run: npx prisma migrate deploy
 
       - name: Build
         run: npm run build
