@@ -2,7 +2,6 @@ import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
@@ -119,7 +118,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await prisma.$transaction(async (tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) => {
       await tx.user.update({
         where: { id: user.id },
         data: { passwordHash },
