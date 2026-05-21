@@ -42,15 +42,20 @@ function SummaryCard({
   value,
   sub,
   color,
+  accent,
 }: {
   label: string;
   value: string;
   sub?: string;
   color?: string;
+  accent?: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+    <div className={`relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm`}>
+      {accent && (
+        <div className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${accent}`} />
+      )}
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
       <p className={`mt-1 text-xl font-bold ${color ?? "text-slate-900"}`}>{value}</p>
       {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
     </div>
@@ -62,21 +67,35 @@ function InsightCard({ insight }: { insight: Insight }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <div>
+      <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-600">
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+          </div>
           <p className="text-xs text-slate-400">
             {new Date(insight.createdAt).toLocaleString()} &middot;{" "}
-            <span className="font-mono">{insight.model}</span>
+            <span className="font-mono text-violet-600">{insight.model}</span>
           </p>
         </div>
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:border-slate-300"
         >
           {expanded ? "Collapse" : "Expand"}
+          <svg
+            className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
       </div>
 
@@ -310,27 +329,37 @@ export default function DashboardDatasetDetailPage() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-8 text-slate-900 sm:px-6">
+    <main className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 px-4 py-8 text-slate-900 sm:px-6">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">
-              Dataset Detail
-            </p>
-            <h1 className="text-2xl font-bold text-slate-900">
-              {dataset?.name ?? "Loading..."}
+            <Link
+              href="/dashboard"
+              className="text-xs font-extrabold uppercase tracking-[0.15em] text-indigo-600 transition hover:text-indigo-700"
+            >
+              ← Dashboard
+            </Link>
+            <h1 className="mt-0.5 text-2xl font-bold text-slate-900">
+              {dataset?.name ?? "Loading…"}
             </h1>
             {dataset?.originalFilename && (
               <p className="text-sm text-slate-400">{dataset.originalFilename}</p>
             )}
           </div>
-          <Link
-            href="/dashboard"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            ← Dashboard
-          </Link>
+          {dataset && (
+            <span
+              className={`mt-1 inline-block self-start rounded-full px-3 py-1 text-xs font-semibold ring-1 ${
+                dataset.status === "PARSED"
+                  ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                  : dataset.status === "FAILED"
+                  ? "bg-red-50 text-red-700 ring-red-200"
+                  : "bg-amber-50 text-amber-700 ring-amber-200"
+              }`}
+            >
+              {dataset.status}
+            </span>
+          )}
         </div>
 
         {error && (
@@ -360,33 +389,38 @@ export default function DashboardDatasetDetailPage() {
                   label="Total Income"
                   value={money(metrics.totalIncome)}
                   color="text-emerald-600"
+                  accent="bg-emerald-500"
                   sub={`${metrics.transactionCount} transactions`}
                 />
                 <SummaryCard
                   label="Total Expenses"
                   value={money(metrics.totalExpenses)}
                   color="text-red-600"
+                  accent="bg-red-500"
                 />
                 <SummaryCard
                   label="Net Savings"
                   value={money(metrics.netSavings)}
                   color={metrics.netSavings >= 0 ? "text-emerald-600" : "text-red-600"}
+                  accent={metrics.netSavings >= 0 ? "bg-emerald-500" : "bg-red-500"}
                 />
                 <SummaryCard
                   label="Savings Rate"
                   value={pct(metrics.savingsRate)}
                   color={metrics.savingsRate >= 0 ? "text-indigo-600" : "text-red-600"}
+                  accent="bg-indigo-500"
                   sub={`Avg txn: ${money(Math.abs(metrics.avgTransaction))}`}
                 />
               </section>
             ) : (
               <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <SummaryCard label="Status" value={dataset?.status ?? "-"} />
-                <SummaryCard label="Rows Parsed" value={(dataset?.rowCount ?? 0).toLocaleString()} />
-                <SummaryCard label="Transactions" value={txMeta.total.toLocaleString()} />
+                <SummaryCard label="Status" value={dataset?.status ?? "-"} accent="bg-slate-400" />
+                <SummaryCard label="Rows Parsed" value={(dataset?.rowCount ?? 0).toLocaleString()} accent="bg-indigo-400" />
+                <SummaryCard label="Transactions" value={txMeta.total.toLocaleString()} accent="bg-violet-400" />
                 <SummaryCard
                   label="Total Amount"
                   value={money(Number(dataset?.transactionStats?.totalAmount ?? 0))}
+                  accent="bg-emerald-400"
                 />
               </section>
             )}
@@ -589,11 +623,11 @@ export default function DashboardDatasetDetailPage() {
 
             {/* AI Insights */}
             <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-violet-50 to-indigo-50 px-5 py-4">
                 <div>
                   <h2 className="font-semibold text-slate-900">AI Insights</h2>
-                  <p className="text-xs text-slate-400">
-                    Powered by OpenAI · {insightMeta.total} analysis
+                  <p className="text-xs text-slate-500">
+                    Powered by GPT-4o-mini · {insightMeta.total} analysis
                     {insightMeta.total !== 1 ? "es" : ""}
                   </p>
                 </div>
@@ -601,20 +635,24 @@ export default function DashboardDatasetDetailPage() {
                   type="button"
                   onClick={() => void onGenerateInsights()}
                   disabled={insightLoading}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                  className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
                 >
-                  {insightLoading ? "Generating..." : "✨ Generate Insights"}
+                  {insightLoading ? "Generating…" : "✦ Generate Insights"}
                 </button>
               </div>
 
               <div className="p-5">
                 {insights.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-                    <div className="mb-2 text-3xl">🤖</div>
-                    <p className="font-medium text-slate-700">No insights yet</p>
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-violet-100 text-violet-600">
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                      </svg>
+                    </div>
+                    <p className="font-semibold text-slate-700">No insights yet</p>
                     <p className="mt-1 text-sm text-slate-400">
-                      Upload a CSV then click Generate Insights. OpenAI will analyse your spending
-                      patterns and return structured recommendations.
+                      Upload a CSV, then click <strong className="text-violet-600">Generate Insights</strong>.
+                      GPT-4o-mini will analyse your spending and return structured recommendations.
                     </p>
                   </div>
                 ) : (

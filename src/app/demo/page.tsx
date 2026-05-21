@@ -96,7 +96,7 @@ export default function DemoPage() {
       </nav>
 
       {/* Hero */}
-      <section className="border-b border-slate-100 bg-slate-50 px-6 py-16">
+      <section className="border-b border-slate-100 bg-gradient-to-br from-slate-50 via-indigo-50/40 to-slate-50 px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <span className="mb-3 inline-block rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-indigo-600">
             Walkthrough
@@ -107,16 +107,16 @@ export default function DemoPage() {
           <p className="mt-4 max-w-2xl text-lg text-slate-500">
             A step-by-step trace from CSV upload to AI-generated spending recommendations.
           </p>
-          <div className="mt-8 flex gap-3">
+          <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/register"
-              className="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              className="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
             >
               Try it yourself →
             </Link>
             <Link
               href="/about"
-              className="rounded-xl border border-slate-300 px-6 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
               About the project
             </Link>
@@ -157,14 +157,17 @@ export default function DemoPage() {
       {/* Engineering highlights */}
       <section className="border-y border-slate-100 bg-slate-50 px-6 py-16">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-10 text-2xl font-bold text-slate-900">
+          <h2 className="mb-2 text-2xl font-bold text-slate-900">
             Engineering highlights
           </h2>
+          <p className="mb-10 text-slate-500">
+            Production-grade details that are invisible when they work.
+          </p>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {highlights.map((h) => (
               <div
                 key={h.label}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
               >
                 <h3 className="mb-2 font-semibold text-indigo-700">{h.label}</h3>
                 <p className="text-sm leading-relaxed text-slate-500">{h.desc}</p>
