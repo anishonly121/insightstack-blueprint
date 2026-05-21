@@ -16,8 +16,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       database: "ok",
       user,
     });
-  } catch (err) {
-    console.error("[health] DB connection failed:", err);
+  } catch {
     return errorResponseWithRequestId(requestId, 500, "HEALTH_CHECK_FAILED", "Health check failed");
   }
 }
