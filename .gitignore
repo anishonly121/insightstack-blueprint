@@ -39,3 +39,35 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local dev / manual test artifacts
+*.log
+*.pid
+.dev_*
+auth_cookie_jar.txt
+cookiejar.txt
+sample.csv
+*_body.json
+*_payload.json
+*_headers.txt
+*_probe.json
+*_once.json
+dataset_create_body.json
+dataset_payload.json
+health_check_body.json
+health_cookie_check.json
+insights_get_body.json
+insights_post_body.json
+dashboard_no_cookie_body.html
+dashboard_no_cookie_headers.txt
+me_after_body.json
+me_cookie_body.json
+me_body.json
+login_cookie_body.json
+login_cookie_headers.txt
+register_cookie_body.json
+register_cookie_headers.txt
+logout_body.json
+upload_body.json
+forgot_payload.json
+forgot_payload2.json
