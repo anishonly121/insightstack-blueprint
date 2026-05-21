@@ -30,8 +30,18 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 px-6 py-12">
-      <div className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 px-6 py-12">
+      {/* Radial glow */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(99,102,241,0.2),transparent)]" />
+      {/* Dot grid */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage: "radial-gradient(circle, #a5b4fc 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }}
+      />
+      <div className="relative w-full max-w-md">
         <Link
           href="/"
           className="mb-8 block text-center text-lg font-bold text-white"
@@ -39,7 +49,7 @@ export default function ForgotPasswordPage() {
           Insight<span className="text-indigo-400">Stack</span>
         </Link>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 shadow-xl backdrop-blur-sm">
           <h1 className="mb-1 text-2xl font-bold text-white">Forgot password?</h1>
           <p className="mb-6 text-sm text-slate-400">
             Enter your email and we&apos;ll send a reset link if an account exists.
@@ -84,7 +94,7 @@ export default function ForgotPasswordPage() {
           )}
 
           <p className="mt-6 text-center text-xs text-slate-500">
-            <Link href="/login" className="hover:text-slate-300 transition">
+            <Link href="/login" className="transition hover:text-slate-300">
               ← Back to login
             </Link>
           </p>
