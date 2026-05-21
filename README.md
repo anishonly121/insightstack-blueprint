@@ -4,7 +4,7 @@
 
 InsightStack is a full-stack web application that transforms raw CSV transaction data into a visual financial dashboard with OpenAI-generated spending insights. Built to production standards — authenticated, audited, rate-limited, and fully tested.
 
-**[Live Demo](#)** · **[LinkedIn Post](#)** · **[API Docs](#api-reference)**
+**[Live Demo](#)** · **[GitHub](https://github.com/anishonly121/insightstack-blueprint)** · **[API Docs](#api-reference)**
 
 ---
 
@@ -162,8 +162,8 @@ RateLimitBucket (keyed by action + user + IP)
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/insightstack.git
-cd insightstack/app
+git clone https://github.com/anishonly121/insightstack-blueprint.git
+cd insightstack-blueprint/app
 npm install
 ```
 
