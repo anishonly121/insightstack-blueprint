@@ -2,7 +2,14 @@
 
 > Upload your transactions. Understand your spending. Get AI-driven recommendations.
 
-InsightStack is a full-stack web application that transforms raw CSV transaction data into a visual financial dashboard with OpenAI-generated spending insights. Built to production standards — authenticated, audited, rate-limited, and fully tested.
+[![CI](https://github.com/anishonly121/insightstack-blueprint/actions/workflows/ci.yml/badge.svg)](https://github.com/anishonly121/insightstack-blueprint/actions/workflows/ci.yml)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?logo=openai&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-22c55e)
+
+InsightStack is a production-grade full-stack web app that turns raw CSV bank exports into a visual financial dashboard with OpenAI-generated spending insights. Built end-to-end with authentication, rate limiting, audit logging, caching, and 29 integration tests.
 
 **[Live Demo](#)** · **[GitHub](https://github.com/anishonly121/insightstack-blueprint)** · **[API Docs](#api-reference)**
 
@@ -10,15 +17,13 @@ InsightStack is a full-stack web application that transforms raw CSV transaction
 
 ## Screenshots
 
-> _Add screenshots of the landing page, dashboard, and insight cards here before publishing._
-
 | Landing | Dashboard | Insights |
 |---------|-----------|---------|
 | ![Landing](docs/landing.png) | ![Dashboard](docs/dashboard.png) | ![Insights](docs/insights.png) |
 
 ---
 
-## What It Does
+## How It Works
 
 | Step | What Happens |
 |------|-------------|
@@ -28,6 +33,24 @@ InsightStack is a full-stack web application that transforms raw CSV transaction
 | 4. View Dashboard | Income vs. expenses, savings rate, monthly bar chart, category pie chart |
 | 5. Search Transactions | Filter by category or search description with server-side pagination |
 | 6. Generate AI Insights | OpenAI analyses spending — returns summary, anomalies, top categories, 3 recommendations |
+
+---
+
+## Engineering Highlights
+
+These are the design decisions that go beyond a typical tutorial project:
+
+**AI pipeline resilience** — Before hitting OpenAI, transactions are PII-redacted (email, phone, long digit strings), capped at 100 rows / 50k characters, and the prompt is hashed. Identical data reuses the cached result, skipping the API call entirely. If OpenAI returns malformed JSON or is unavailable, a local fallback analyser runs against the same data — the user always gets a response.
+
+**MetricSnapshot caching** — Analytics are computed server-side once and stored as a `MetricSnapshot` row in PostgreSQL with a 1-hour TTL. Subsequent dashboard loads read directly from the snapshot instead of re-aggregating thousands of transaction rows on every request.
+
+**DB-backed rate limiting without Redis** — A `RateLimitBucket` table (keyed by action + user ID + IP) handles per-user and per-IP rate limits with opportunistic row cleanup. No external queue or cache dependency required.
+
+**Dual auth strategy** — Every protected route accepts both a `Bearer` JWT header *and* an HttpOnly cookie simultaneously. API clients use the header; browser page navigations use the cookie. The same middleware handles both without duplication.
+
+**Real integration tests** — Tests spawn an actual `next start` process, poll `/api/health` until ready, and run against a live PostgreSQL database. No mocks. This caught real regressions during development that unit tests would have missed (e.g., Prisma query shape changes, JSON serialisation edge cases).
+
+**Immutable audit log** — Every sensitive action (upload, rename, delete, insight generate) appends a row to `AuditLog`. Rows are never updated or deleted. The daily insight quota is enforced by counting AuditLog entries rather than a mutable counter that could drift under concurrent requests.
 
 ---
 
@@ -45,7 +68,8 @@ InsightStack is a full-stack web application that transforms raw CSV transaction
 | Styling | Tailwind CSS v4 |
 | AI | OpenAI GPT-4o-mini |
 | Email | SendGrid (password reset) |
-| Testing | Node.js built-in test runner (integration tests) |
+| Testing | Node.js built-in test runner (29 integration tests) |
+| CI | GitHub Actions |
 
 ---
 
@@ -169,7 +193,7 @@ npm install
 
 ### 2. Configure environment
 
-Create `app/.env`:
+Create `app/.env` (use `.env.example` as a reference):
 
 ```env
 DATABASE_URL="postgresql://<user>:<pass>@<host>-pooler.neon.tech/<db>?sslmode=require"
@@ -183,6 +207,8 @@ SENDGRID_FROM_EMAIL="your-verified-sender@example.com"
 SENDGRID_TEMPLATE_RESET_PASSWORD="d-..."
 NODE_ENV="development"
 ```
+
+> SendGrid keys are optional for local dev — password reset emails will silently no-op.
 
 ### 3. Run migrations & seed
 
@@ -213,25 +239,29 @@ date,description,category,amount
 2026-01-25,Phone bill,Utilities,-25.00
 ```
 
+Negative amounts = expenses. Positive amounts = income.
+
 ---
 
 ## Running Tests
 
-Tests spin up `next start` against a real database and run 29 integration tests across auth, datasets, upload, metrics, transaction filtering, insights, rename, and delete.
+Tests spawn `next start` against a real PostgreSQL database and run 29 integration tests across auth, datasets, upload, metrics, transaction filtering, insights, rename, and delete.
 
 ```bash
-npm run build   # required before tests
+npm run build   # required — tests run against the production build
 npm test
 ```
+
+Tests run against whatever `DATABASE_URL` is set in your environment. A separate test database is recommended.
 
 ---
 
 ## Deployment (Vercel + Neon)
 
 1. Push this repo to GitHub
-2. Import into [Vercel](https://vercel.com) — set root directory to `app/`
+2. Import into [Vercel](https://vercel.com) — **set the root directory to `app/`**
 3. Add all environment variables from `.env` in the Vercel dashboard
-4. Run migrations against your production database:
+4. Run migrations against your production Neon database:
    ```bash
    npx prisma migrate deploy
    ```
@@ -265,6 +295,8 @@ app/
 │   ├── schema.prisma                   # Full data model
 │   ├── seed.ts                         # Admin user seed
 │   └── migrations/                     # Migration history
+├── docs/
+│   └── demo-transactions.csv           # Sample data for testing
 └── tests/
     ├── auth.integration.test.mjs       # Auth endpoint tests
     ├── datasets.integration.test.mjs   # Dataset CRUD + upload tests
