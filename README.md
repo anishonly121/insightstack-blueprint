@@ -11,7 +11,7 @@
 
 InsightStack is a production-grade full-stack web app that turns raw CSV bank exports into a visual financial dashboard with OpenAI-generated spending insights. Built end-to-end with authentication, rate limiting, audit logging, caching, and 29 integration tests.
 
-**[Live Demo](#)** · **[GitHub](https://github.com/anishonly121/insightstack-blueprint)** · **[API Docs](#api-reference)**
+**[Live Demo](https://insightstack-peach.vercel.app)** · **[GitHub](https://github.com/anishonly121/insightstack-blueprint)** · **[API Docs](#api-reference)**
 
 ---
 
