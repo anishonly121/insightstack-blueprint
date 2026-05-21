@@ -1,0 +1,132 @@
+// Run migrations:
+// npx prisma migrate dev --name init
+// Generate Prisma Client:
+// npx prisma generate
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum DatasetStatus {
+  UPLOADED
+  PARSED
+  FAILED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+
+  datasets     Dataset[]
+  auditLogs    AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Dataset {
+  id               String        @id @default(uuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name             String
+  status           DatasetStatus @default(UPLOADED)
+  originalFilename String?
+  rowCount         Int           @default(0)
+  previewJson      Json?
+
+  createdAt        DateTime      @default(now())
+
+  transactions     Transaction[]
+  metricSnapshots  MetricSnapshot[]
+  insights         Insight[]
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  datasetId   String
+  dataset     Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  date        DateTime
+  description String
+  category    String
+  amount      Decimal  @db.Decimal(12, 2)
+
+  createdAt   DateTime @default(now())
+
+  @@index([datasetId, date])
+  @@index([datasetId, category])
+}
+
+model MetricSnapshot {
+  id         String   @id @default(uuid())
+  datasetId  String
+  dataset    Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  computedAt DateTime @default(now())
+  metricsJson Json
+
+  @@index([datasetId, computedAt])
+}
+
+model Insight {
+  id          String   @id @default(uuid())
+  datasetId   String
+  dataset     Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  model       String
+  cacheKey    String?
+  insightText String
+  insightJson Json?
+
+  @@index([datasetId, createdAt])
+  @@index([datasetId, cacheKey, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  action     String
+  entityType String
+  entityId   String?
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model RateLimitBucket {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  windowStart DateTime
+  count       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
