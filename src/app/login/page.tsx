@@ -60,7 +60,7 @@ export default function LoginPage() {
 
         <Link href="/" className="relative flex items-center gap-2 text-xl font-bold tracking-tight text-white">
           <LogoMark size={28} />
-          Insight<span className="text-blue-400">Stack</span>
+          <span>Insight<span className="text-blue-400">Stack</span></span>
         </Link>
 
         <div className="relative">
