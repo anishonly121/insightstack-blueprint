@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { LogoMark } from "@/components/LogoMark";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -30,42 +31,33 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 px-6 py-12">
-      {/* Radial glow */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(99,102,241,0.2),transparent)]" />
-      {/* Dot grid */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: "radial-gradient(circle, #a5b4fc 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      />
+    <div className="relative flex min-h-screen items-center justify-center bg-[#050B18] px-6 py-12">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div style={{ position: "absolute", top: "-20%", left: "10%", width: "80%", height: "70%", background: "radial-gradient(ellipse, rgba(59,130,246,0.08) 0%, transparent 65%)", filter: "blur(48px)" }} />
+      </div>
       <div className="relative w-full max-w-md">
-        <Link
-          href="/"
-          className="mb-8 block text-center text-lg font-bold text-white"
-        >
-          Insight<span className="text-indigo-400">Stack</span>
+        <Link href="/" className="mb-8 flex items-center justify-center gap-2 text-xl font-bold text-white">
+          <LogoMark size={28} />
+          Insight<span className="text-blue-400">Stack</span>
         </Link>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 shadow-xl backdrop-blur-sm">
-          <h1 className="mb-1 text-2xl font-bold text-white">Forgot password?</h1>
-          <p className="mb-6 text-sm text-slate-400">
+        <div className="rounded-2xl border border-white/[0.06] bg-[#0A1628]/80 p-8 shadow-[0_32px_80px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+          <h1 className="mb-1 text-2xl font-black text-white">Forgot password?</h1>
+          <p className="mb-7 text-sm text-[#8892A4]">
             Enter your email and we&apos;ll send a reset link if an account exists.
           </p>
 
           {submitted ? (
-            <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-4 text-center">
-              <p className="font-semibold text-emerald-300">Check your inbox</p>
-              <p className="mt-1 text-sm text-emerald-400/80">
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-5 text-center">
+              <p className="font-bold text-emerald-400">Check your inbox</p>
+              <p className="mt-1.5 text-sm text-emerald-500/70">
                 If an account exists for <strong>{email}</strong>, a reset link has been sent.
               </p>
             </div>
           ) : (
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-400">Email</label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#8892A4]">Email</label>
                 <input
                   type="email"
                   placeholder="jane@example.com"
@@ -73,12 +65,12 @@ export default function ForgotPasswordPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30"
+                  className="w-full rounded-xl border border-white/[0.06] bg-[#050B18] px-4 py-3 text-sm text-white placeholder-[#8892A4]/50 transition focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
 
               {error && (
-                <div className="rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-300">
+                <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                   {error}
                 </div>
               )}
@@ -86,17 +78,16 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
+                className="group relative w-full overflow-hidden rounded-xl bg-blue-500 py-3.5 text-sm font-semibold text-white shadow-[0_0_25px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] transition hover:bg-blue-400 hover:shadow-[0_0_40px_rgba(59,130,246,0.55)] disabled:opacity-50"
               >
-                {loading ? "Sending..." : "Send reset link"}
+                <span className="relative z-10">{loading ? "Sending…" : "Send reset link"}</span>
+                <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/10 to-white/0 transition-transform duration-700 group-hover:translate-x-[100%]" />
               </button>
             </form>
           )}
 
-          <p className="mt-6 text-center text-xs text-slate-500">
-            <Link href="/login" className="transition hover:text-slate-300">
-              ← Back to login
-            </Link>
+          <p className="mt-6 text-center text-xs text-[#8892A4]/50">
+            <Link href="/login" className="transition hover:text-[#8892A4]">← Back to login</Link>
           </p>
         </div>
       </div>

@@ -72,3 +72,5 @@ logout_body.json
 upload_body.json
 forgot_payload.json
 forgot_payload2.json
+
+.vercel
