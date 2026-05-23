@@ -556,12 +556,10 @@ export default function Home() {
             <a href="/#pricing" className="rounded-lg px-3 py-2 text-sm text-[#8892A4] transition hover:bg-white/5 hover:text-white">Pricing</a>
             <div className="mx-2 h-4 w-px bg-white/10" />
             <Link href="/login" className="rounded-lg px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white">Log in</Link>
-            <Magnetic>
-              <Link href="/register" className="group relative overflow-hidden rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]">
-                <span className="relative z-10">Get started free →</span>
-                <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/12 to-white/0 transition-transform duration-500 group-hover:translate-x-[100%]" />
-              </Link>
-            </Magnetic>
+            <Link href="/register" className="group relative overflow-hidden rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]">
+              <span className="relative z-10">Get started free →</span>
+              <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/12 to-white/0 transition-transform duration-500 group-hover:translate-x-[100%]" />
+            </Link>
           </div>
           {/* Mobile nav */}
           <div className="flex items-center gap-2 sm:hidden">
@@ -855,14 +853,14 @@ export default function Home() {
                       <div className="absolute -top-px left-1/2 -translate-x-1/2 whitespace-nowrap rounded-b-full bg-blue-500 px-5 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-[0_4px_20px_rgba(59,130,246,0.5)]">Most Popular</div>
                     </>
                   )}
-                  <div className="relative pt-2">
+                  <div className="relative flex flex-1 flex-col pt-2">
                     <p className="text-xs font-semibold uppercase tracking-widest text-[#8892A4]">{plan.name}</p>
                     <div className="mt-3 flex items-end gap-1">
                       <span className="text-4xl font-black text-white">{plan.price}</span>
                       {plan.period && <span className="mb-1.5 text-sm text-[#8892A4]">{plan.period}</span>}
                     </div>
                     <p className="mt-1 text-sm text-[#8892A4]">{plan.tagline}</p>
-                    <ul className="mb-8 mt-6 space-y-3">
+                    <ul className="mt-6 space-y-3">
                       {plan.features.map(f => (
                         <li key={f} className="flex items-start gap-2.5 text-sm text-zinc-300">
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
@@ -870,9 +868,11 @@ export default function Home() {
                         </li>
                       ))}
                     </ul>
-                    <Link href={plan.href} className={`block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all duration-200 hover:-translate-y-px ${plan.hot ? "bg-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)] hover:bg-blue-400 hover:shadow-[0_0_40px_rgba(59,130,246,0.55)]" : "border border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:border-white/[0.14] hover:text-white"}`}>
-                      {plan.cta}
-                    </Link>
+                    <div className="mt-auto pt-8">
+                      <Link href={plan.href} className={`block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all duration-200 hover:-translate-y-px ${plan.hot ? "bg-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)] hover:bg-blue-400 hover:shadow-[0_0_40px_rgba(59,130,246,0.55)]" : "border border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:border-white/[0.14] hover:text-white"}`}>
+                        {plan.cta}
+                      </Link>
+                    </div>
                   </div>
                 </TiltCard>
               </Reveal>

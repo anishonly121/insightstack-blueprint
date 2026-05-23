@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
       <div className="relative w-full max-w-md">
         <Link href="/" className="mb-8 flex items-center justify-center gap-2 text-xl font-bold text-white">
           <LogoMark size={28} />
-          Insight<span className="text-blue-400">Stack</span>
+          <span>Insight<span className="text-blue-400">Stack</span></span>
         </Link>
 
         <div className="rounded-2xl border border-white/[0.06] bg-[#0A1628]/80 p-8 shadow-[0_32px_80px_rgba(0,0,0,0.6)] backdrop-blur-xl">
