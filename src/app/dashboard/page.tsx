@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -22,39 +22,34 @@ type ActionState = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  PARSED:   { label: "Parsed",   className: "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200" },
-  UPLOADED: { label: "Uploaded", className: "bg-amber-100 text-amber-700 ring-1 ring-amber-200" },
-  FAILED:   { label: "Failed",   className: "bg-red-100 text-red-700 ring-1 ring-red-200" },
+  PARSED:   { label: "Parsed",   className: "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20" },
+  UPLOADED: { label: "Uploaded", className: "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20" },
+  FAILED:   { label: "Failed",   className: "bg-red-500/10 text-red-400 ring-1 ring-red-500/20" },
 };
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-4 px-6 py-16 text-center">
-      {/* SVG illustration */}
-      <svg
-        className="h-16 w-16 text-slate-300"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 64 64"
-        strokeWidth={1.2}
-      >
-        <rect x="8" y="12" width="48" height="40" rx="4" strokeDasharray="4 3" />
-        <path strokeLinecap="round" d="M22 24h20M22 32h12" />
-        <circle cx="44" cy="44" r="8" fill="white" stroke="currentColor" />
-        <path strokeLinecap="round" d="M44 41v6M41 44h6" />
-      </svg>
+    <div className="flex flex-col items-center gap-5 px-6 py-20 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/8 bg-zinc-800">
+        <svg className="h-8 w-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 64 64" strokeWidth={1.2}>
+          <rect x="8" y="12" width="48" height="40" rx="4" strokeDasharray="4 3" />
+          <path strokeLinecap="round" d="M22 24h20M22 32h12" />
+          <circle cx="44" cy="44" r="8" fill="transparent" stroke="currentColor" />
+          <path strokeLinecap="round" d="M44 41v6M41 44h6" />
+        </svg>
+      </div>
       <div>
-        <p className="text-base font-semibold text-slate-700">No datasets yet</p>
-        <p className="mt-1 max-w-xs text-sm text-slate-400">
+        <p className="text-base font-bold text-zinc-100">No datasets yet</p>
+        <p className="mt-1.5 max-w-xs text-sm text-zinc-600">
           Create a dataset above, upload a CSV, then click{" "}
-          <span className="font-medium text-indigo-600">AI Insights</span> to analyse your spending.
+          <span className="font-semibold text-blue-400">AI Insights</span> to analyse your spending.
         </p>
       </div>
-      <div className="mt-1 flex flex-wrap justify-center gap-2 text-xs text-slate-400">
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+      <div className="mt-1 flex flex-wrap justify-center gap-2 text-xs text-zinc-600">
+        <span className="rounded-full border border-white/8 bg-zinc-800 px-3 py-1">
           date · description · category · amount
         </span>
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+        <span className="rounded-full border border-white/8 bg-zinc-800 px-3 py-1">
           CSV format
         </span>
       </div>
@@ -66,12 +61,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [meta, setMeta] = useState<PaginatedMeta>({
-    page: 1,
-    pageSize: 8,
-    total: 0,
-    totalPages: 1,
-  });
+  const [meta, setMeta] = useState<PaginatedMeta>({ page: 1, pageSize: 8, total: 0, totalPages: 1 });
   const [name, setName] = useState("");
   const [pageError, setPageError] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
@@ -85,29 +75,17 @@ export default function DashboardPage() {
   const setAction = (datasetId: string, patch: Partial<ActionState>) => {
     setActions((prev) => {
       const defaults: ActionState = {
-        uploadLoading: false,
-        insightLoading: false,
-        deleteLoading: false,
-        renaming: false,
-        renameValue: "",
-        error: "",
+        uploadLoading: false, insightLoading: false, deleteLoading: false,
+        renaming: false, renameValue: "", error: "",
       };
-      return {
-        ...prev,
-        [datasetId]: { ...defaults, ...prev[datasetId], ...patch },
-      };
+      return { ...prev, [datasetId]: { ...defaults, ...prev[datasetId], ...patch } };
     });
   };
 
   const loadDatasets = async (page = 1) => {
     setPageError("");
     try {
-      const res = await api.listDatasets({
-        page,
-        pageSize: meta.pageSize,
-        sort: "createdAt",
-        order: "desc",
-      });
+      const res = await api.listDatasets({ page, pageSize: meta.pageSize, sort: "createdAt", order: "desc" });
       setDatasets(res.data);
       setMeta(res.meta);
     } catch (err) {
@@ -118,17 +96,9 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    if (!getToken()) {
-      router.replace("/login");
-      return;
-    }
+    if (!getToken()) { router.replace("/login"); return; }
     void (async () => {
-      try {
-        const meRes = await api.me();
-        setUser(meRes.user);
-      } catch {
-        // non-fatal
-      }
+      try { const meRes = await api.me(); setUser(meRes.user); } catch {}
       await loadDatasets(1);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,10 +121,7 @@ export default function DashboardPage() {
 
   const onUpload = async (datasetId: string) => {
     const file = fileByDataset[datasetId];
-    if (!file) {
-      setAction(datasetId, { error: "Select a CSV file first" });
-      return;
-    }
+    if (!file) { setAction(datasetId, { error: "Select a CSV file first" }); return; }
     setAction(datasetId, { uploadLoading: true, error: "" });
     try {
       await api.uploadDatasetCsv(datasetId, file);
@@ -184,9 +151,7 @@ export default function DashboardPage() {
     setAction(datasetId, { deleteLoading: true, error: "" });
     try {
       await api.deleteDataset(datasetId);
-      await loadDatasets(
-        Math.min(meta.page, Math.ceil((meta.total - 1) / meta.pageSize) || 1),
-      );
+      await loadDatasets(Math.min(meta.page, Math.ceil((meta.total - 1) / meta.pageSize) || 1));
     } catch (err) {
       setAction(datasetId, { error: err instanceof Error ? err.message : "Delete failed" });
     } finally {
@@ -201,15 +166,10 @@ export default function DashboardPage() {
 
   const onRenameSubmit = async (datasetId: string) => {
     const newName = actions[datasetId]?.renameValue?.trim();
-    if (!newName) {
-      setAction(datasetId, { renaming: false });
-      return;
-    }
+    if (!newName) { setAction(datasetId, { renaming: false }); return; }
     try {
       await api.renameDataset(datasetId, newName);
-      setDatasets((prev) =>
-        prev.map((d) => (d.id === datasetId ? { ...d, name: newName } : d)),
-      );
+      setDatasets((prev) => prev.map((d) => (d.id === datasetId ? { ...d, name: newName } : d)));
     } catch (err) {
       setAction(datasetId, { error: err instanceof Error ? err.message : "Rename failed" });
     } finally {
@@ -218,14 +178,8 @@ export default function DashboardPage() {
   };
 
   const onLogout = async () => {
-    try {
-      await api.logout();
-    } catch {
-      // best-effort
-    } finally {
-      clearToken();
-      router.replace("/login");
-    }
+    try { await api.logout(); } catch {}
+    finally { clearToken(); router.replace("/login"); }
   };
 
   const parsedCount = datasets.filter((d) => d.status === "PARSED").length;
@@ -233,27 +187,25 @@ export default function DashboardPage() {
   const totalRows = datasets.reduce((s, d) => s + d.rowCount, 0);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-50 px-4 py-8 text-slate-900 sm:px-6">
+    <main className="min-h-screen bg-[#050B18] px-4 py-8 text-white sm:px-6">
       <div className="mx-auto max-w-5xl">
 
-        {/* ── Header ───────────────────────────────────────────────────────── */}
+        {/* ── Header ─────────────────────────────────────────────────────── */}
         <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Link href="/" className="text-xs font-extrabold uppercase tracking-[0.15em] text-indigo-600 hover:text-indigo-700 transition">
+            <Link href="/" className="text-xs font-extrabold uppercase tracking-[0.15em] text-blue-500 transition hover:text-blue-400">
               InsightStack
             </Link>
-            <h1 className="mt-0.5 text-2xl font-bold text-slate-900">
+            <h1 className="mt-1 text-2xl font-black text-white">
               {user ? `Welcome back, ${user.name.split(" ")[0]}` : "Dashboard"}
             </h1>
-            {user && (
-              <p className="text-sm text-slate-400">{user.email}</p>
-            )}
+            {user && <p className="text-sm text-zinc-500">{user.email}</p>}
           </div>
           <div className="flex items-center gap-2">
             {user?.role === "ADMIN" && (
               <Link
                 href="/admin"
-                className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                className="rounded-lg border border-blue-500/20 bg-blue-500/8 px-3 py-2 text-sm font-semibold text-blue-400 transition hover:bg-blue-500/15"
               >
                 Admin Panel
               </Link>
@@ -261,49 +213,40 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => void onLogout()}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+              className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white"
             >
               Logout
             </button>
           </div>
         </header>
 
-        {/* ── Stats summary ────────────────────────────────────────────────── */}
+        {/* ── Stats ──────────────────────────────────────────────────────── */}
         {!pageLoading && (
           <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
-              { label: "Total Datasets", value: meta.total, sub: "in your account" },
-              { label: "Parsed",         value: parsedCount, highlight: "text-emerald-600", sub: "ready for insights" },
-              { label: "Total Rows",     value: totalRows.toLocaleString(), sub: "transactions loaded" },
-              { label: "Failed",         value: failedCount, highlight: failedCount > 0 ? "text-red-600" : "text-slate-400", sub: "upload errors" },
+              { label: "Total Datasets", value: meta.total, sub: "in your account", color: "text-white" },
+              { label: "Parsed",         value: parsedCount, sub: "ready for insights", color: "text-emerald-400" },
+              { label: "Total Rows",     value: totalRows.toLocaleString(), sub: "transactions loaded", color: "text-white" },
+              { label: "Failed",         value: failedCount, sub: "upload errors", color: failedCount > 0 ? "text-red-400" : "text-zinc-600" },
             ].map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-              >
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  {stat.label}
-                </p>
-                <p className={`mt-1 text-2xl font-bold ${stat.highlight ?? "text-slate-900"}`}>
-                  {stat.value}
-                </p>
-                <p className="mt-0.5 text-xs text-slate-400">{stat.sub}</p>
+              <div key={stat.label} className="rounded-xl border border-white/6 bg-zinc-900 p-4 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">{stat.label}</p>
+                <p className={`mt-1.5 text-2xl font-black ${stat.color}`}>{stat.value}</p>
+                <p className="mt-0.5 text-xs text-zinc-600">{stat.sub}</p>
               </div>
             ))}
           </section>
         )}
 
-        {/* ── Create dataset ───────────────────────────────────────────────── */}
-        <section className="mb-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-              New Dataset
-            </h2>
-            <span className="text-xs text-slate-400">Give your spending period a name</span>
+        {/* ── Create dataset ─────────────────────────────────────────────── */}
+        <section className="mb-5 rounded-xl border border-white/6 bg-zinc-900 p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500">New Dataset</h2>
+            <span className="text-xs text-zinc-700">Give your spending period a name</span>
           </div>
           <form onSubmit={onCreateDataset} className="flex flex-col gap-2 sm:flex-row">
             <input
-              className="flex-1 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              className="flex-1 rounded-xl border border-white/8 bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="e.g. January 2026 Expenses"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -312,7 +255,7 @@ export default function DashboardPage() {
             <button
               type="submit"
               disabled={createLoading}
-              className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-zinc-900 shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 hover:shadow-[0_0_30px_rgba(59,130,246,0.45)] disabled:opacity-50"
             >
               {createLoading ? "Creating..." : "+ Create"}
             </button>
@@ -320,18 +263,16 @@ export default function DashboardPage() {
         </section>
 
         {pageError && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">
             {pageError}
           </div>
         )}
 
-        {/* ── Datasets list ────────────────────────────────────────────────── */}
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <h2 className="font-semibold text-slate-900">Your Datasets</h2>
-            {hasDatasets && (
-              <span className="text-xs text-slate-400">{meta.total} total</span>
-            )}
+        {/* ── Datasets list ──────────────────────────────────────────────── */}
+        <section className="rounded-xl border border-white/6 bg-zinc-900 shadow-sm">
+          <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
+            <h2 className="font-bold text-white">Your Datasets</h2>
+            {hasDatasets && <span className="text-xs text-zinc-600">{meta.total} total</span>}
           </div>
 
           {pageLoading ? (
@@ -344,73 +285,49 @@ export default function DashboardPage() {
             <EmptyState />
           ) : (
             <>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-white/4">
                 {datasets.map((dataset) => {
                   const state: ActionState = actions[dataset.id] ?? {
-                    uploadLoading: false,
-                    insightLoading: false,
-                    deleteLoading: false,
-                    renaming: false,
-                    renameValue: "",
-                    error: "",
+                    uploadLoading: false, insightLoading: false, deleteLoading: false,
+                    renaming: false, renameValue: "", error: "",
                   };
-
-                  const statusCfg =
-                    STATUS_CONFIG[dataset.status] ?? {
-                      label: dataset.status,
-                      className: "bg-slate-100 text-slate-600 ring-1 ring-slate-200",
-                    };
-
+                  const statusCfg = STATUS_CONFIG[dataset.status] ?? {
+                    label: dataset.status,
+                    className: "bg-zinc-800 text-zinc-400 ring-1 ring-zinc-700",
+                  };
                   const selectedFile = fileByDataset[dataset.id];
 
                   return (
-                    <article
-                      key={dataset.id}
-                      className="group p-5 transition-colors hover:bg-slate-50/60"
-                    >
+                    <article key={dataset.id} className="group p-5 transition-colors hover:bg-white/2">
                       {/* Top row */}
-                      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                      <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           {state.renaming ? (
                             <form
-                              onSubmit={(e) => {
-                                e.preventDefault();
-                                void onRenameSubmit(dataset.id);
-                              }}
+                              onSubmit={(e) => { e.preventDefault(); void onRenameSubmit(dataset.id); }}
                               className="flex items-center gap-2"
                             >
                               <input
                                 ref={renameInputRef}
-                                className="rounded-lg border border-indigo-300 bg-indigo-50 px-2.5 py-1.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                className="rounded-lg border border-blue-500/30 bg-zinc-800 px-2.5 py-1.5 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                 value={state.renameValue}
-                                onChange={(e) =>
-                                  setAction(dataset.id, { renameValue: e.target.value })
-                                }
+                                onChange={(e) => setAction(dataset.id, { renameValue: e.target.value })}
                                 autoFocus
                               />
-                              <button
-                                type="submit"
-                                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700"
-                              >
+                              <button type="submit" className="rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-black text-zinc-900 hover:bg-blue-400">
                                 Save
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => setAction(dataset.id, { renaming: false })}
-                                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                              >
+                              <button type="button" onClick={() => setAction(dataset.id, { renaming: false })} className="rounded-lg border border-white/8 px-3 py-1.5 text-xs font-semibold text-zinc-400 hover:bg-zinc-800 hover:text-white">
                                 Cancel
                               </button>
                             </form>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <h3 className="truncate font-semibold text-slate-900">
-                                {dataset.name}
-                              </h3>
+                              <h3 className="truncate font-bold text-zinc-100">{dataset.name}</h3>
                               <button
                                 type="button"
                                 onClick={() => onStartRename(dataset.id, dataset.name)}
-                                className="shrink-0 rounded p-0.5 text-slate-300 opacity-0 transition hover:text-indigo-600 group-hover:opacity-100"
+                                className="shrink-0 rounded p-0.5 text-zinc-700 opacity-0 transition hover:text-blue-400 group-hover:opacity-100"
                                 title="Rename"
                               >
                                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -419,17 +336,13 @@ export default function DashboardPage() {
                               </button>
                             </div>
                           )}
-                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusCfg.className}`}>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${statusCfg.className}`}>
                               {statusCfg.label}
                             </span>
-                            <span className="text-xs text-slate-400">
-                              {dataset.rowCount.toLocaleString()} rows
-                            </span>
+                            <span className="text-xs text-zinc-600">{dataset.rowCount.toLocaleString()} rows</span>
                             {dataset.originalFilename && (
-                              <span className="max-w-[200px] truncate text-xs text-slate-400">
-                                {dataset.originalFilename}
-                              </span>
+                              <span className="max-w-[200px] truncate text-xs text-zinc-600">{dataset.originalFilename}</span>
                             )}
                           </div>
                         </div>
@@ -437,7 +350,7 @@ export default function DashboardPage() {
                         <div className="flex shrink-0 items-center gap-2">
                           <Link
                             href={`/dashboard/datasets/${dataset.id}`}
-                            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                            className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-black text-zinc-900 shadow-[0_0_15px_rgba(59,130,246,0.25)] transition hover:bg-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.4)]"
                           >
                             Open →
                           </Link>
@@ -445,8 +358,7 @@ export default function DashboardPage() {
                             type="button"
                             onClick={() => void onDeleteDataset(dataset.id, dataset.name)}
                             disabled={state.deleteLoading}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                            title="Delete dataset"
+                            className="rounded-lg border border-white/8 px-3 py-1.5 text-sm font-medium text-zinc-500 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
                           >
                             {state.deleteLoading ? "..." : "Delete"}
                           </button>
@@ -455,8 +367,8 @@ export default function DashboardPage() {
 
                       {/* Actions row */}
                       <div className="flex flex-wrap items-center gap-2">
-                        <label className="flex flex-1 min-w-[200px] cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 transition hover:bg-white hover:border-slate-300">
-                          <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <label className="flex flex-1 min-w-[200px] cursor-pointer items-center gap-2 rounded-lg border border-white/6 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-500 transition hover:border-white/12 hover:text-zinc-300">
+                          <svg className="h-4 w-4 shrink-0 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
                           </svg>
                           <span className="truncate text-xs">
@@ -466,10 +378,7 @@ export default function DashboardPage() {
                             type="file"
                             accept=".csv,text/csv"
                             onChange={(e) =>
-                              setFileByDataset((prev) => ({
-                                ...prev,
-                                [dataset.id]: e.target.files?.[0] ?? null,
-                              }))
+                              setFileByDataset((prev) => ({ ...prev, [dataset.id]: e.target.files?.[0] ?? null }))
                             }
                             className="sr-only"
                           />
@@ -478,7 +387,7 @@ export default function DashboardPage() {
                           type="button"
                           onClick={() => void onUpload(dataset.id)}
                           disabled={state.uploadLoading || !selectedFile}
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-lg border border-white/8 bg-zinc-800 px-3 py-2.5 text-sm font-medium text-zinc-300 transition hover:border-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           {state.uploadLoading ? "Uploading…" : "Upload CSV"}
                         </button>
@@ -486,7 +395,7 @@ export default function DashboardPage() {
                           type="button"
                           onClick={() => void onGenerateInsights(dataset.id)}
                           disabled={state.insightLoading || dataset.status !== "PARSED"}
-                          className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-lg bg-cyan-500 px-3 py-2.5 text-sm font-black text-zinc-900 shadow-[0_0_15px_rgba(6,182,212,0.25)] transition hover:bg-cyan-400 hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] disabled:cursor-not-allowed disabled:opacity-40"
                           title={dataset.status !== "PARSED" ? "Upload a CSV first" : undefined}
                         >
                           {state.insightLoading ? "Generating…" : "✦ AI Insights"}
@@ -494,7 +403,7 @@ export default function DashboardPage() {
                       </div>
 
                       {state.error && (
-                        <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600">
+                        <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-400 ring-1 ring-red-500/20">
                           {state.error}
                         </p>
                       )}
@@ -505,16 +414,14 @@ export default function DashboardPage() {
 
               {/* Pagination */}
               {meta.totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-sm text-slate-500">
-                  <p>
-                    Page {meta.page} of {meta.totalPages} &middot; {meta.total} total
-                  </p>
+                <div className="flex items-center justify-between border-t border-white/5 px-5 py-3 text-sm text-zinc-600">
+                  <p>Page {meta.page} of {meta.totalPages} &middot; {meta.total} total</p>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       disabled={meta.page <= 1}
                       onClick={() => void loadDatasets(meta.page - 1)}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 font-medium transition hover:bg-slate-50 disabled:opacity-40"
+                      className="rounded-lg border border-white/8 px-3 py-1.5 font-medium transition hover:bg-zinc-800 disabled:opacity-40"
                     >
                       ← Prev
                     </button>
@@ -522,7 +429,7 @@ export default function DashboardPage() {
                       type="button"
                       disabled={meta.page >= meta.totalPages}
                       onClick={() => void loadDatasets(meta.page + 1)}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 font-medium transition hover:bg-slate-50 disabled:opacity-40"
+                      className="rounded-lg border border-white/8 px-3 py-1.5 font-medium transition hover:bg-zinc-800 disabled:opacity-40"
                     >
                       Next →
                     </button>

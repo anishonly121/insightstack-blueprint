@@ -1,41 +1,47 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 const built = [
   {
     title: "JWT Auth System",
     desc: "Register, login, password reset via email, role-based access (USER / ADMIN). Passwords hashed with bcrypt, tokens signed with RS256-style secrets.",
     tag: "Security",
-    color: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    accentColor: "#3B82F6",
+    tagClass: "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20",
   },
   {
     title: "CSV Ingestion Pipeline",
     desc: "Upload any bank-format CSV. PapaParse validates every row, rejected rows are reported, accepted rows inserted atomically via Prisma transactions.",
     tag: "Data",
-    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    accentColor: "#10B981",
+    tagClass: "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20",
   },
   {
     title: "Metrics Engine",
     desc: "Server-side computation of income, expenses, savings rate, category totals, and monthly breakdown. Results cached as MetricSnapshot with a 1-hour TTL.",
     tag: "Analytics",
-    color: "bg-amber-50 text-amber-700 border-amber-200",
+    accentColor: "#06B6D4",
+    tagClass: "bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20",
   },
   {
     title: "AI Insights Pipeline",
     desc: "Transactions are PII-redacted, chunked to 50k chars, and sent to GPT-4o-mini. Responses are schema-validated with Zod. Fallback local analysis runs if OpenAI fails.",
     tag: "AI",
-    color: "bg-purple-50 text-purple-700 border-purple-200",
+    accentColor: "#8B5CF6",
+    tagClass: "bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20",
   },
   {
     title: "Rate Limiting & Quotas",
     desc: "Per-user, per-IP rate limits on every mutating endpoint backed by a PostgreSQL RateLimitBucket table. Daily quota cap on AI generation.",
     tag: "Production",
-    color: "bg-red-50 text-red-700 border-red-200",
+    accentColor: "#EF4444",
+    tagClass: "bg-red-500/10 text-red-400 ring-1 ring-red-500/20",
   },
   {
     title: "Audit Logging",
     desc: "Every significant action (upload, insight, rename, delete) writes an immutable AuditLog row with IP, user-agent, and entity reference.",
     tag: "Observability",
-    color: "bg-cyan-50 text-cyan-700 border-cyan-200",
+    accentColor: "#F97316",
+    tagClass: "bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20",
   },
 ];
 
@@ -62,20 +68,19 @@ const stack = [
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen bg-[#050B18] text-white">
+
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+      <nav className="sticky top-0 z-50 border-b border-white/6 bg-[#050B18]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-bold tracking-tight">
-            Insight<span className="text-indigo-600">Stack</span>
+          <Link href="/" className="text-lg font-bold tracking-tight text-white">
+            Insight<span className="text-blue-400">Stack</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/demo" className="text-sm font-medium text-slate-600 transition hover:text-slate-900">
-              Demo
-            </Link>
+            <Link href="/demo" className="text-sm font-medium text-zinc-500 transition hover:text-white">Demo</Link>
             <Link
               href="/login"
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-zinc-900 shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400"
             >
               Open App
             </Link>
@@ -84,23 +89,28 @@ export default function AboutPage() {
       </nav>
 
       {/* Hero */}
-      <section className="border-b border-slate-100 bg-gradient-to-br from-slate-50 via-indigo-50/40 to-slate-50 px-6 py-16">
-        <div className="mx-auto max-w-5xl">
-          <span className="mb-3 inline-block rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-indigo-600">
+      <section className="relative overflow-hidden border-b border-white/5 px-6 py-20">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(ellipse 60% 50% at 30% 0%, rgba(59,130,246,0.06) 0%, transparent 70%)" }}
+        />
+        <div className="relative mx-auto max-w-5xl">
+          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/8 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
             Portfolio Project
           </span>
-          <h1 className="mt-3 text-4xl font-bold leading-tight text-slate-900">
+          <h1 className="mt-4 text-4xl font-black leading-tight text-white sm:text-5xl">
             About InsightStack
           </h1>
-          <p className="mt-4 max-w-2xl text-lg text-slate-500">
+          <p className="mt-5 max-w-2xl text-lg text-zinc-400">
             A production-style full-stack application demonstrating authentication,
             data ingestion, analytics, and AI integration — built to the standard
             I hold myself to in a professional environment.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-9 flex flex-wrap gap-3">
             <Link
               href="/register"
-              className="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-zinc-900 shadow-[0_0_25px_rgba(59,130,246,0.35)] transition hover:bg-blue-400 hover:shadow-[0_0_40px_rgba(59,130,246,0.55)]"
             >
               Try it live →
             </Link>
@@ -108,7 +118,7 @@ export default function AboutPage() {
               href="https://github.com/anishonly121/insightstack-blueprint"
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/8"
             >
               View source ↗
             </a>
@@ -117,7 +127,7 @@ export default function AboutPage() {
       </section>
 
       {/* Quick stats */}
-      <section className="border-b border-slate-100 bg-white px-6 py-10">
+      <section className="border-b border-white/5 px-6 py-12">
         <div className="mx-auto max-w-5xl">
           <div className="grid grid-cols-2 gap-6 text-center sm:grid-cols-4">
             {[
@@ -126,9 +136,9 @@ export default function AboutPage() {
               { value: "6", label: "Core systems" },
               { value: "100%", label: "TypeScript" },
             ].map((s) => (
-              <div key={s.label}>
-                <p className="text-3xl font-black text-indigo-600">{s.value}</p>
-                <p className="mt-1 text-sm text-slate-500">{s.label}</p>
+              <div key={s.label} className="group">
+                <p className="text-3xl font-black text-blue-400 transition group-hover:drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">{s.value}</p>
+                <p className="mt-1.5 text-sm text-zinc-600">{s.label}</p>
               </div>
             ))}
           </div>
@@ -136,25 +146,26 @@ export default function AboutPage() {
       </section>
 
       {/* What I built */}
-      <section className="px-6 py-16">
+      <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-2 text-2xl font-bold text-slate-900">What I built</h2>
-          <p className="mb-10 text-slate-500">
-            Six distinct systems, each designed and implemented independently.
-          </p>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-blue-500">Systems</p>
+          <h2 className="mb-3 text-2xl font-black text-white">What I built</h2>
+          <p className="mb-12 text-zinc-500">Six distinct systems, each designed and implemented independently.</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {built.map((item) => (
               <div
                 key={item.title}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                className="group relative overflow-hidden rounded-2xl border border-white/6 bg-zinc-900 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/12 hover:shadow-[0_8px_40px_rgba(0,0,0,0.5)]"
               >
-                <span
-                  className={`mb-3 inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${item.color}`}
-                >
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  style={{ background: `radial-gradient(ellipse at top left, ${item.accentColor}08 0%, transparent 60%)` }}
+                />
+                <span className={`relative mb-3 inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${item.tagClass}`}>
                   {item.tag}
                 </span>
-                <h3 className="mb-2 font-semibold text-slate-900">{item.title}</h3>
-                <p className="text-sm leading-relaxed text-slate-500">{item.desc}</p>
+                <h3 className="relative mb-2 font-bold text-zinc-100">{item.title}</h3>
+                <p className="relative text-sm leading-relaxed text-zinc-500">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -162,18 +173,19 @@ export default function AboutPage() {
       </section>
 
       {/* Tech stack */}
-      <section className="border-y border-slate-100 bg-slate-50 px-6 py-16">
+      <section className="border-y border-white/5 bg-zinc-900/50 px-6 py-20">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-8 text-2xl font-bold text-slate-900">Tech stack</h2>
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-blue-500">Stack</p>
+          <h2 className="mb-10 text-2xl font-black text-white">Tech stack</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {stack.map((s) => (
               <div
                 key={s.name}
-                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-indigo-200 hover:shadow-sm"
+                className="flex items-center gap-3 rounded-xl border border-white/6 bg-zinc-900 px-4 py-3.5 transition hover:border-blue-500/20 hover:shadow-sm"
               >
-                <span className="font-semibold text-slate-800">{s.name}</span>
-                <span className="text-slate-300">·</span>
-                <span className="text-sm text-slate-500">{s.role}</span>
+                <span className="font-bold text-zinc-100">{s.name}</span>
+                <span className="text-zinc-700">·</span>
+                <span className="text-sm text-zinc-500">{s.role}</span>
               </div>
             ))}
           </div>
@@ -181,16 +193,17 @@ export default function AboutPage() {
       </section>
 
       {/* What I learned */}
-      <section className="px-6 py-16">
+      <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-8 text-2xl font-bold text-slate-900">What I learned</h2>
-          <ul className="space-y-4">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-blue-500">Growth</p>
+          <h2 className="mb-10 text-2xl font-black text-white">What I learned</h2>
+          <ul className="space-y-5">
             {learned.map((item, i) => (
               <li key={i} className="flex items-start gap-4">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white shadow-sm">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-black text-zinc-900 shadow-[0_0_12px_rgba(59,130,246,0.25)]">
                   {i + 1}
                 </span>
-                <p className="pt-0.5 leading-relaxed text-slate-600">{item}</p>
+                <p className="pt-0.5 leading-relaxed text-zinc-400">{item}</p>
               </li>
             ))}
           </ul>
@@ -198,38 +211,33 @@ export default function AboutPage() {
       </section>
 
       {/* Engineering decisions */}
-      <section className="border-y border-slate-100 bg-slate-50 px-6 py-16">
+      <section className="border-y border-white/5 bg-zinc-900/50 px-6 py-20">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-4 text-2xl font-bold text-slate-900">Key engineering decisions</h2>
-          <p className="mb-8 text-slate-500">
-            Choices I made intentionally and the reasoning behind them.
-          </p>
-          <div className="grid gap-5 sm:grid-cols-2">
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-blue-500">Architecture</p>
+          <h2 className="mb-3 text-2xl font-black text-white">Key engineering decisions</h2>
+          <p className="mb-10 text-zinc-500">Choices I made intentionally and the reasoning behind them.</p>
+          <div className="grid gap-4 sm:grid-cols-2">
             {[
               {
                 decision: "Prisma driver adapter over connection pooler",
-                reason:
-                  "Using @prisma/adapter-pg with pg.Pool gives direct SSL control per environment — no surprise cert failures between local, CI, and Neon (Vercel Postgres).",
+                reason: "Using @prisma/adapter-pg with pg.Pool gives direct SSL control per environment — no surprise cert failures between local, CI, and Neon (Vercel Postgres).",
               },
               {
                 decision: "URL-based SSL detection",
-                reason:
-                  "Rather than branching on NODE_ENV (which is 'production' in CI too), I check the connection string for 'localhost' — a more reliable signal.",
+                reason: "Rather than branching on NODE_ENV (which is 'production' in CI too), I check the connection string for 'localhost' — a more reliable signal.",
               },
               {
                 decision: "Zod on LLM output boundaries",
-                reason:
-                  "GPT-4o-mini returns freeform JSON. Schema-validating every response means a malformed reply triggers the local fallback, never a runtime crash.",
+                reason: "GPT-4o-mini returns freeform JSON. Schema-validating every response means a malformed reply triggers the local fallback, never a runtime crash.",
               },
               {
                 decision: "Metric caching at the database layer",
-                reason:
-                  "MetricSnapshot rows have a 1-hour TTL. Aggregation queries run once per hour per dataset, not on every page load — keeps costs and latency low.",
+                reason: "MetricSnapshot rows have a 1-hour TTL. Aggregation queries run once per hour per dataset, not on every page load — keeps costs and latency low.",
               },
             ].map((d) => (
-              <div key={d.decision} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="mb-2 font-semibold text-slate-900">{d.decision}</h3>
-                <p className="text-sm leading-relaxed text-slate-500">{d.reason}</p>
+              <div key={d.decision} className="rounded-2xl border border-white/6 bg-zinc-900 p-5 transition hover:border-white/10">
+                <h3 className="mb-2 font-bold text-zinc-100">{d.decision}</h3>
+                <p className="text-sm leading-relaxed text-zinc-500">{d.reason}</p>
               </div>
             ))}
           </div>
@@ -237,18 +245,16 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="px-6 py-14 text-center">
-        <p className="text-slate-500">See it in action or read the source</p>
-        <div className="mt-4 flex flex-wrap justify-center gap-3">
-          <Link
-            href="/demo"
-            className="rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
+      <section className="px-6 py-16 text-center">
+        <p className="mb-2 text-xs font-bold uppercase tracking-widest text-zinc-700">Get started</p>
+        <p className="mb-6 text-zinc-500">See it in action or read the source</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Link href="/demo" className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/8">
             Demo walkthrough
           </Link>
           <Link
             href="/register"
-            className="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+            className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-zinc-900 shadow-[0_0_25px_rgba(59,130,246,0.35)] transition hover:bg-blue-400"
           >
             Open the app →
           </Link>
@@ -256,7 +262,7 @@ export default function AboutPage() {
             href="https://github.com/anishonly121/insightstack-blueprint"
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-xl border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/8"
           >
             GitHub ↗
           </a>
