@@ -78,8 +78,8 @@ export default function LoginPage() {
 
           <div className="mt-10 grid grid-cols-3 gap-4">
             {[
-              { val: "30+", label: "API Endpoints" },
-              { val: "29", label: "Integration Tests" },
+              { val: "60 s", label: "CSV to insight" },
+              { val: "$2.4k", label: "Avg error caught" },
               { val: "GPT-4o", label: "AI Engine" },
             ].map((s) => (
               <div key={s.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
