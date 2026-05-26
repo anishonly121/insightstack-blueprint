@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { AUTH_COOKIE_NAME, AUTH_TOKEN_MAX_AGE_SECONDS, signToken } from "@/lib/auth";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
+import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
 
@@ -24,6 +25,16 @@ export async function POST(req: Request): Promise<NextResponse> {
         "UNSUPPORTED_MEDIA_TYPE",
         "Content-Type must be application/json",
       );
+    }
+
+    const ip = getRequestIp(req);
+    const { allowed } = await rateLimitOrThrow({
+      key: `auth:register:${ip}`,
+      limit: 5,
+      windowMs: 60 * 1000,
+    });
+    if (!allowed) {
+      return errorResponseWithRequestId(requestId, 429, "RATE_LIMITED", "Too many requests. Try again later.");
     }
 
     const requestMeta = getAuditRequestMeta(req);
