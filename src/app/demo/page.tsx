@@ -174,7 +174,17 @@ export default function DemoPage() {
         <div className="mx-auto max-w-5xl">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-blue-500">Format</p>
           <h2 className="mb-4 text-2xl font-black text-white">CSV format</h2>
-          <p className="mb-7 text-zinc-500">Any bank or credit card export works. The parser expects four columns:</p>
+          <p className="mb-5 text-zinc-500">Any bank or credit card export works. The parser expects four columns:</p>
+          <a
+            href="/demo-transactions.csv"
+            download="demo-transactions.csv"
+            className="mb-7 inline-flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-2.5 text-sm font-semibold text-emerald-400 transition hover:border-emerald-500/40 hover:bg-emerald-500/15"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            Download sample CSV — try it right now
+          </a>
           <pre className="overflow-x-auto rounded-2xl border border-white/6 bg-zinc-900 px-6 py-5 text-sm text-emerald-400 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
 {`date,description,category,amount
 2026-01-02,McDonalds,Food,-9.50

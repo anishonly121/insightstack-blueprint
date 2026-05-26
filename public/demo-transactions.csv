@@ -1,0 +1,31 @@
+date,description,category,amount
+2026-01-02,McDonalds,Food,-9.50
+2026-01-05,Grocery Store,Food,-78.40
+2026-01-10,Salary,Income,3200.00
+2026-01-12,Netflix,Entertainment,-15.99
+2026-01-14,Electricity bill,Utilities,-95.00
+2026-01-18,Coffee shop,Food,-6.20
+2026-01-20,Phone bill,Utilities,-30.00
+2026-01-22,Grab ride,Transport,-12.50
+2026-01-25,Gym membership,Health,-50.00
+2026-01-28,Amazon purchase,Shopping,-45.99
+2026-02-01,Freelance payment,Income,850.00
+2026-02-03,Grocery Store,Food,-82.10
+2026-02-07,Internet bill,Utilities,-40.00
+2026-02-10,Movie tickets,Entertainment,-28.00
+2026-02-14,Restaurant dinner,Food,-55.80
+2026-02-17,Taxi,Transport,-18.00
+2026-02-20,Salary,Income,3200.00
+2026-02-22,Coffee shop,Food,-4.50
+2026-02-25,Dentist,Health,-120.00
+2026-02-28,Clothing store,Shopping,-89.00
+2026-03-01,Grocery Store,Food,-74.60
+2026-03-05,Salary,Income,3200.00
+2026-03-08,Netflix,Entertainment,-15.99
+2026-03-10,Electricity bill,Utilities,-88.00
+2026-03-12,Coffee shop,Food,-5.80
+2026-03-15,Phone bill,Utilities,-30.00
+2026-03-18,Side project payment,Income,400.00
+2026-03-20,Restaurant,Food,-42.00
+2026-03-25,Gym membership,Health,-50.00
+2026-03-28,Online course,Education,-29.99
