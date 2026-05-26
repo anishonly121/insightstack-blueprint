@@ -27,6 +27,7 @@ import {
   type InsightJson,
   type MetricsJson,
   type PaginatedMeta,
+  type QuotaInfo,
   type Transaction,
 } from "@/lib/api";
 
@@ -198,6 +199,7 @@ export default function DashboardDatasetDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [insightLoading, setInsightLoading] = useState(false);
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [insightPage, setInsightPage] = useState(1);
   const [insightMeta, setInsightMeta] = useState<PaginatedMeta>({ page: 1, pageSize: 5, total: 0, totalPages: 1 });
   const [search, setSearch] = useState("");
@@ -236,9 +238,14 @@ export default function DashboardDatasetDetailPage() {
     setError("");
     setLoading(true);
     try {
-      const [datasetRes, metricsRes] = await Promise.all([api.getDataset(id), api.getMetrics(id).catch(() => null)]);
+      const [datasetRes, metricsRes, quotaRes] = await Promise.all([
+        api.getDataset(id),
+        api.getMetrics(id).catch(() => null),
+        api.quota().catch(() => null),
+      ]);
       setDataset(datasetRes.data);
       if (metricsRes) setMetrics(metricsRes.data.metricsJson);
+      if (quotaRes) setQuota(quotaRes.data);
       await Promise.all([loadTransactions(1, "", ""), loadInsights(1)]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dataset");
@@ -259,8 +266,12 @@ export default function DashboardDatasetDetailPage() {
     try {
       await api.generateInsights(id);
       await loadInsights(1);
-      const metricsRes = await api.getMetrics(id).catch(() => null);
+      const [metricsRes, quotaRes] = await Promise.all([
+        api.getMetrics(id).catch(() => null),
+        api.quota().catch(() => null),
+      ]);
       if (metricsRes) setMetrics(metricsRes.data.metricsJson);
+      if (quotaRes) setQuota(quotaRes.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate insights");
     } finally {
@@ -503,14 +514,29 @@ export default function DashboardDatasetDetailPage() {
                     Powered by GPT-4o-mini · {insightMeta.total} analysis{insightMeta.total !== 1 ? "es" : ""}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void onGenerateInsights()}
-                  disabled={insightLoading}
-                  className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-black text-white shadow-[0_0_15px_rgba(6,182,212,0.3)] transition hover:bg-cyan-400 hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] disabled:opacity-50"
-                >
-                  {insightLoading ? "Generating…" : "✦ Generate Insights"}
-                </button>
+                <div className="flex flex-col items-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void onGenerateInsights()}
+                    disabled={insightLoading || (quota?.remaining === 0)}
+                    className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-black text-white shadow-[0_0_15px_rgba(6,182,212,0.3)] transition hover:bg-cyan-400 hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] disabled:opacity-50"
+                  >
+                    {insightLoading ? "Generating…" : "✦ Generate Insights"}
+                  </button>
+                  {quota && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-800">
+                        <div
+                          className={`h-full rounded-full transition-all ${quota.remaining === 0 ? "bg-red-500" : quota.insightsToday > 20 ? "bg-amber-500" : "bg-cyan-500"}`}
+                          style={{ width: `${(quota.insightsToday / quota.quota) * 100}%` }}
+                        />
+                      </div>
+                      <span className={`text-xs tabular-nums ${quota.remaining === 0 ? "text-red-400" : "text-zinc-600"}`}>
+                        {quota.insightsToday}/{quota.quota} today
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="p-5">
