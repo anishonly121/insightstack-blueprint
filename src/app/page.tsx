@@ -838,7 +838,7 @@ export default function Home() {
               },
             ].map((card, i) => (
               <Reveal key={card.title} delay={i * 80}>
-                <TiltCard className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A1628] p-6 hover:border-white/[0.10] hover:shadow-[0_16px_50px_rgba(0,0,0,0.5)]">
+                <TiltCard className="group flex flex-col h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A1628] p-6 hover:border-white/[0.10] hover:shadow-[0_16px_50px_rgba(0,0,0,0.5)]">
                   <div className={`absolute inset-0 bg-gradient-to-br ${card.accent === "blue" ? "from-blue-500/3" : card.accent === "violet" ? "from-violet-500/3" : "from-emerald-500/3"} to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
                   <div className="relative mb-4">{card.icon}</div>
                   <h3 className="relative mb-2 text-base font-bold text-white">{card.title}</h3>
