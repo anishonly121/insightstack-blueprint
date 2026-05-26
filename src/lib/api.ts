@@ -66,6 +66,12 @@ export type AuditActivity = {
   createdAt: string;
 };
 
+export type QuotaInfo = {
+  insightsToday: number;
+  quota: number;
+  remaining: number;
+};
+
 export type DatasetDetail = Dataset & {
   insights: Insight[];
   transactionStats: {
@@ -192,6 +198,13 @@ export const api = {
     ),
 
   me: () => request<{ token: string; user: AuthUser }>("/api/auth/me"),
+
+  quota: () => request<{ data: QuotaInfo }>("/api/auth/me/quota"),
+
+  listActivity: (page = 1, pageSize = 25) =>
+    request<{ data: AuditActivity[]; meta: PaginatedMeta }>(
+      `/api/activity?page=${page}&pageSize=${pageSize}`
+    ),
 
   changePassword: (input: { currentPassword: string; newPassword: string }) =>
     request<{ data: { ok: boolean } }>("/api/auth/me", {
