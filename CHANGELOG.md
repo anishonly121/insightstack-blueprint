@@ -12,6 +12,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.0] — 2026-05-27
+
+### Added
+- **`src/app/error.tsx`** — global Next.js error boundary: branded 500 page with "Try again" (calls `reset()`) and "Go to dashboard", shows `error.digest` for log correlation
+- **`src/app/dashboard/error.tsx`** — dashboard-scoped error boundary with compact inline card design
+- **`/dashboard/settings` page** — account settings: profile display, change password (requires current password + confirmation), delete account (requires password + typed phrase "delete my account")
+- **`PATCH /api/auth/me`** — change password endpoint; validates current password before updating; writes `PASSWORD_CHANGED` audit log entry
+- **`DELETE /api/auth/me`** — delete account endpoint; requires password confirmation; cascades via Prisma relations; clears auth cookie on success
+- **Settings link** in dashboard header and dataset detail header — consistent access from all authenticated views
+- **Insight quota tooltip** on "AI Insights" button — surfaces the 30/day limit so users aren't surprised by a 429 error
+
+### Fixed
+- 2 ESLint errors in `page.tsx`: `<a href="/#pricing">` replaced with `<Link>` (would have failed the CI lint step)
+- Stale `eslint-disable-next-line` directive removed from `admin/page.tsx`
+- Unused `writeFileSync` import removed from `take-screenshots.mjs`
+
+---
+
 ## [1.3.0] — 2026-05-26
 
 ### Added
