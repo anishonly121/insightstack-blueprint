@@ -12,6 +12,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.5.0] — 2026-05-27
+
+### Added
+- **`GET /api/auth/me/quota`** — returns `{ insightsToday, quota, remaining }` for today's insight usage; shares the same UTC day window logic as the insights POST route
+- **`GET /api/activity` pagination** — `page` and `pageSize` query params (Zod-validated); parallel `prisma.$transaction([findMany, count])` for efficient paging; response includes `meta.totalPages`
+- **`/dashboard/activity` page** — full activity log UI: per-action icons and colors (10 action types mapped), relative timestamps stable to page load, "Load more" append-pagination showing remaining count
+- **Quota progress bar** on dataset detail page — inline `X/30 today` counter with color transitions (cyan → amber at >20 → red at 30); Generate Insights button disabled when limit reached
+- **Activity link** in dashboard header alongside existing Settings link
+
+### Fixed
+- React Compiler purity violation in `RelativeTime` — `Date.now()` moved to module-level constant; `nowMs` prop removed from component signature
+
+---
+
 ## [1.4.0] — 2026-05-27
 
 ### Added
