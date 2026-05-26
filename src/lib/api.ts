@@ -193,6 +193,20 @@ export const api = {
 
   me: () => request<{ token: string; user: AuthUser }>("/api/auth/me"),
 
+  changePassword: (input: { currentPassword: string; newPassword: string }) =>
+    request<{ data: { ok: boolean } }>("/api/auth/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+
+  deleteAccount: (input: { password: string }) =>
+    request<{ data: { ok: boolean } }>("/api/auth/me", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    }),
+
   logout: () =>
     request<{ success: boolean }>(
       "/api/auth/logout",

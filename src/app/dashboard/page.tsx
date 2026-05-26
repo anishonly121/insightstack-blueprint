@@ -257,6 +257,12 @@ export default function DashboardPage() {
                 Admin Panel
               </Link>
             )}
+            <Link
+              href="/dashboard/settings"
+              className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white"
+            >
+              Settings
+            </Link>
             <button
               type="button"
               onClick={() => void onLogout()}
@@ -443,7 +449,7 @@ export default function DashboardPage() {
                           onClick={() => void onGenerateInsights(dataset.id)}
                           disabled={state.insightLoading || dataset.status !== "PARSED"}
                           className="rounded-lg bg-cyan-500 px-3 py-2.5 text-sm font-black text-white shadow-[0_0_15px_rgba(6,182,212,0.25)] transition hover:bg-cyan-400 hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] disabled:cursor-not-allowed disabled:opacity-40"
-                          title={dataset.status !== "PARSED" ? "Upload a CSV first" : undefined}
+                          title={dataset.status !== "PARSED" ? "Upload a CSV first" : "Up to 30 AI analyses per day"}
                         >
                           {state.insightLoading ? "Generating…" : "✦ AI Insights"}
                         </button>
