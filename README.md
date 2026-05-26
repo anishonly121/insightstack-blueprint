@@ -235,6 +235,8 @@ RateLimitBucket (keyed by action + user + IP)
 | `POST` | `/api/auth/register` | Create account → returns JWT |
 | `POST` | `/api/auth/login` | Login → returns JWT + sets HttpOnly cookie |
 | `GET` | `/api/auth/me` | Get current user (Bearer or cookie) |
+| `PATCH` | `/api/auth/me` | Change password (requires current password) |
+| `DELETE` | `/api/auth/me` | Delete account + all data (requires password confirmation) |
 | `POST` | `/api/auth/logout` | Clear auth cookie |
 | `POST` | `/api/auth/forgot-password` | Send password reset email |
 | `POST` | `/api/auth/reset-password` | Consume reset token, set new password |

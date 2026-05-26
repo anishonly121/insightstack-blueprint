@@ -291,17 +291,25 @@ export default function DashboardDatasetDetailPage() {
             <h1 className="mt-1 text-2xl font-black text-white">{dataset?.name ?? "Loading…"}</h1>
             {dataset?.originalFilename && <p className="text-sm text-zinc-600">{dataset.originalFilename}</p>}
           </div>
-          {dataset && (
-            <span className={`mt-1 inline-block self-start rounded-full px-3 py-1 text-xs font-bold ring-1 ${
-              dataset.status === "PARSED"
-                ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20"
-                : dataset.status === "FAILED"
-                ? "bg-red-500/10 text-red-400 ring-red-500/20"
-                : "bg-blue-500/10 text-blue-400 ring-blue-500/20"
-            }`}>
-              {dataset.status}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {dataset && (
+              <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold ring-1 ${
+                dataset.status === "PARSED"
+                  ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20"
+                  : dataset.status === "FAILED"
+                  ? "bg-red-500/10 text-red-400 ring-red-500/20"
+                  : "bg-blue-500/10 text-blue-400 ring-blue-500/20"
+              }`}>
+                {dataset.status}
+              </span>
+            )}
+            <Link
+              href="/dashboard/settings"
+              className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 transition hover:text-white"
+            >
+              Settings
+            </Link>
+          </div>
         </div>
 
         {error && (
