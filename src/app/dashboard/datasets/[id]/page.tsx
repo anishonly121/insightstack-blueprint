@@ -499,7 +499,7 @@ export default function DashboardDatasetDetailPage() {
                   type="button"
                   onClick={() => void onGenerateInsights()}
                   disabled={insightLoading}
-                  className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-black text-zinc-900 shadow-[0_0_15px_rgba(6,182,212,0.3)] transition hover:bg-cyan-400 hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] disabled:opacity-50"
+                  className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-black text-white shadow-[0_0_15px_rgba(6,182,212,0.3)] transition hover:bg-cyan-400 hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] disabled:opacity-50"
                 >
                   {insightLoading ? "Generating…" : "✦ Generate Insights"}
                 </button>
