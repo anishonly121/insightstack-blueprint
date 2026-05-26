@@ -28,6 +28,44 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   FAILED:   { label: "Failed",   className: "bg-red-500/10 text-red-400 ring-1 ring-red-500/20" },
 };
 
+function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#0A1628] p-6 shadow-[0_32px_80px_rgba(0,0,0,0.7)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 ring-1 ring-red-500/20">
+          <svg className="h-6 w-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+        </div>
+        <h2 className="mb-1 text-base font-bold text-white">Delete dataset?</h2>
+        <p className="mb-6 text-sm text-zinc-500">
+          <span className="font-semibold text-zinc-300">&ldquo;{name}&rdquo;</span> and all its transactions and insights will be permanently deleted. This cannot be undone.
+        </p>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-xl border border-white/[0.08] py-2.5 text-sm font-semibold text-zinc-400 transition hover:border-white/[0.15] hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] transition hover:bg-red-400"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EmptyState() {
   return (
     <div className="flex flex-col items-center gap-5 px-6 py-20 text-center">
@@ -69,6 +107,7 @@ export default function DashboardPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [fileByDataset, setFileByDataset] = useState<Record<string, File | null>>({});
   const [actions, setActions] = useState<Record<string, ActionState>>({});
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
 
   const hasDatasets = useMemo(() => datasets.length > 0, [datasets.length]);
@@ -147,8 +186,14 @@ export default function DashboardPage() {
     }
   };
 
-  const onDeleteDataset = async (datasetId: string, datasetName: string) => {
-    if (!window.confirm(`Delete "${datasetName}"? This cannot be undone.`)) return;
+  const onDeleteDataset = (datasetId: string, datasetName: string) => {
+    setDeleteConfirm({ id: datasetId, name: datasetName });
+  };
+
+  const onDeleteConfirmed = async () => {
+    if (!deleteConfirm) return;
+    const { id: datasetId } = deleteConfirm;
+    setDeleteConfirm(null);
     setAction(datasetId, { deleteLoading: true, error: "" });
     try {
       await api.deleteDataset(datasetId);
@@ -442,6 +487,14 @@ export default function DashboardPage() {
           )}
         </section>
       </div>
+
+      {deleteConfirm && (
+        <DeleteModal
+          name={deleteConfirm.name}
+          onConfirm={() => void onDeleteConfirmed()}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
     </main>
   );
 }

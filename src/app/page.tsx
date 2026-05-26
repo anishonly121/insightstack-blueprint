@@ -475,6 +475,28 @@ const stack = [
   "JWT Auth","bcrypt","PapaParse","Vercel","Rate Limiting","CSRF Protection",
 ];
 
+// ── Back to top ────────────────────────────────────────────────────────────────
+function BackToTop() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 600);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <button
+      type="button"
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      aria-label="Back to top"
+      className={`fixed bottom-6 right-6 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-white/[0.08] bg-[#0A1628]/90 text-zinc-400 shadow-[0_4px_24px_rgba(0,0,0,0.4)] backdrop-blur-xl transition-all duration-300 hover:border-blue-500/40 hover:text-blue-400 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+      </svg>
+    </button>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function Home() {
   const [bentoActive, setBentoActive] = useState(false);
@@ -979,8 +1001,9 @@ export default function Home() {
                 </div>
               </div>
               <div>
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[#8892A4]/50">Open source</p>
+                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[#8892A4]/50">Builder</p>
                 <div className="flex flex-col gap-2 text-[#8892A4]">
+                  <a href="https://www.linkedin.com/in/anishbhole/" target="_blank" rel="noopener noreferrer" className="transition hover:text-white">LinkedIn ↗</a>
                   <a href="https://github.com/anishonly121/insightstack-blueprint" target="_blank" rel="noopener noreferrer" className="transition hover:text-white">GitHub ↗</a>
                 </div>
               </div>
@@ -996,6 +1019,9 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* ── Back to top ──────────────────────────────────────────────────────── */}
+      <BackToTop />
     </div>
   );
 }

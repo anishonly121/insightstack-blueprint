@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "InsightStack — AI-Powered Finance Analytics",
@@ -11,6 +12,11 @@ export const metadata: Metadata = {
     description:
       "Upload your transactions, visualise spending, and get AI-generated recommendations.",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "InsightStack — AI-Powered Finance Analytics",
+    description: "Upload your transactions, visualise spending, and get AI-generated recommendations.",
   },
 };
 
@@ -33,6 +39,7 @@ export default function RootLayout({
         }
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );
