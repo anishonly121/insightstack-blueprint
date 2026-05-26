@@ -1,4 +1,4 @@
-# InsightStack — AI-Powered Personal Finance Analytics
+# InsightStack — AI-Powered Finance Analytics
 
 > Upload your transactions. Understand your spending. Get AI-driven recommendations.
 
@@ -6,14 +6,42 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?logo=openai&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e)
 
-InsightStack is a production-grade full-stack web app that turns raw CSV bank exports into a visual financial dashboard with OpenAI-generated spending insights. Built end-to-end with authentication, rate limiting, audit logging, caching, and 29 integration tests.
+InsightStack is a **production-grade full-stack web application** that turns raw CSV bank exports into a visual financial dashboard with OpenAI-generated spending insights. Built end-to-end with authentication, rate limiting, audit logging, caching, and 29 integration tests — no mocks.
 
-**[Live Demo →](https://insightstack-peach.vercel.app)** · **[Demo Walkthrough](https://insightstack-peach.vercel.app/demo)** · **[About the Project](https://insightstack-peach.vercel.app/about)** · **[API Docs](#api-reference)**
+**[Live Demo →](https://insightstack-peach.vercel.app)** · **[How It Works](https://insightstack-peach.vercel.app/demo)** · **[About the Project](https://insightstack-peach.vercel.app/about)**
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fanishonly121%2Finsightstack-blueprint&root-directory=app)
+
+---
+
+## Table of Contents
+
+- [Screenshots](#screenshots)
+- [How It Works](#how-it-works)
+- [Engineering Highlights](#engineering-highlights)
+- [Tech Stack](#tech-stack)
+- [Features](#features)
+- [Database Schema](#database-schema)
+- [API Reference](#api-reference)
+- [Getting Started](#getting-started)
+- [Running Tests](#running-tests)
+- [Deployment](#deployment-vercel--neon)
+- [Project Structure](#project-structure)
+
+---
+
+## Screenshots
+
+> **[Try the live app →](https://insightstack-peach.vercel.app)** — sign up free, upload `docs/demo-transactions.csv`, and generate AI insights in under 60 seconds.
+
+| Landing Page | Dashboard | AI Insights |
+|---|---|---|
+| ![Landing](docs/screenshots/landing.png) | ![Dashboard](docs/screenshots/dashboard.png) | ![Insights](docs/screenshots/insights.png) |
+
+> *Screenshots coming soon — [try it live](https://insightstack-peach.vercel.app) in the meantime.*
 
 ---
 
@@ -26,7 +54,7 @@ InsightStack is a production-grade full-stack web app that turns raw CSV bank ex
 | 3. Upload CSV | Parse, validate, and store transaction rows in PostgreSQL |
 | 4. View Dashboard | Income vs. expenses, savings rate, monthly bar chart, category pie chart |
 | 5. Search Transactions | Filter by category or search description with server-side pagination |
-| 6. Generate AI Insights | OpenAI analyses spending — returns summary, anomalies, top categories, 3 recommendations |
+| 6. Generate AI Insights | GPT-4o analyses spending — returns summary, anomalies, top categories, 3 recommendations |
 
 ---
 
@@ -46,6 +74,10 @@ These are the design decisions that go beyond a typical tutorial project:
 
 **Immutable audit log** — Every sensitive action (upload, rename, delete, insight generate) appends a row to `AuditLog`. Rows are never updated or deleted. The daily insight quota is enforced by counting AuditLog entries rather than a mutable counter that could drift under concurrent requests.
 
+**Zod on AI output boundaries** — GPT-4o returns freeform JSON. Schema-validating every response means a malformed reply triggers the local fallback, never a runtime crash. The same Zod schemas are used for both request validation and AI response validation.
+
+**URL-based SSL detection** — Rather than branching on `NODE_ENV` (which is `'production'` in CI too), SSL is detected by checking the connection string for `'localhost'` — a more reliable signal across local, CI, and production environments.
+
 ---
 
 ## Tech Stack
@@ -60,59 +92,53 @@ These are the design decisions that go beyond a typical tutorial project:
 | CSV Parsing | Papa Parse |
 | Charts | Recharts (Pie, Bar, Line) |
 | Styling | Tailwind CSS v4 |
-| AI | OpenAI GPT-4o-mini |
+| AI | OpenAI GPT-4o |
 | Email | SendGrid (password reset) |
 | Testing | Node.js built-in test runner (29 integration tests) |
-| CI | GitHub Actions |
+| CI | GitHub Actions (build + type-check + migrate + test) |
+| Deployment | Vercel |
 
 ---
 
 ## Features
 
 ### Authentication
-- Register, login, logout, forgot password, reset password
+- Register, login, logout, forgot password, reset password via email
 - JWT signed tokens + HttpOnly cookie auth (both supported simultaneously)
 - bcrypt password hashing (10 rounds)
-- Enumeration-safe forgot-password response
+- Enumeration-safe forgot-password response (same response whether email exists or not)
 - Role-based access control: `USER` / `ADMIN`
 
 ### Dataset Management
 - Create, list (paginated), view, rename, delete datasets
-- CSV upload with row-level validation — bad rows skipped, good rows inserted atomically
+- CSV upload with row-level validation — bad rows skipped, good rows inserted atomically via Prisma transactions
 - Dataset status: `UPLOADED` → `PARSED` / `FAILED`
-- Preview JSON stored for first-load display
 
 ### Analytics & Metrics
 - Server-computed `MetricSnapshot` per dataset: total income, total expenses, net savings, savings rate, avg transaction, top categories, monthly breakdown
-- Results cached for 1 hour and served from PostgreSQL — no redundant computation
+- Results cached for 1 hour — no redundant aggregation queries
 - Three charts: category pie, monthly income/expense bar, net savings trend line
-
-### Transaction Explorer
-- Search by description (case-insensitive, server-side)
-- Filter by category — dropdown populated from actual data
-- Paginated results (25 per page) with sort support
-- One-click CSV export of the current view
+- One-click CSV export of filtered transactions
 
 ### AI Insights
 - PII redaction before sending to OpenAI (email, phone, NRIC, long digit strings)
 - Payload capped at 100 transactions / 50k characters
-- Response schema-validated with Zod — fallback local analysis if OpenAI fails or returns malformed JSON
+- Response schema-validated with Zod — local fallback analysis if OpenAI fails
 - Results cached by prompt hash — identical data skips the API call
 - Daily quota of 30 insights per user (enforced via AuditLog counting)
-- Per-user, per-IP rate limit: 20 requests/min on the insights endpoint
 - Structured output: summary, top categories with reasons, anomalies, 3 recommendations
 
 ### Security
-- Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy headers on all routes
+- CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy headers
 - CSRF enforcement for cookie-authenticated mutations
 - JSON body hardening: `415` on wrong Content-Type, `400` on malformed JSON
-- Request correlation IDs (`x-request-id`) on all requests and error responses
-- Immutable AuditLog for all sensitive actions (upload, insight generate, rename, delete)
-- DB-backed rate limiting (`RateLimitBucket` table with opportunistic cleanup)
+- Request correlation IDs on all requests and error responses
+- Immutable AuditLog for all sensitive actions
+- DB-backed rate limiting (no Redis required)
 
 ### Admin Panel
-- Tabbed interface: view all users and all datasets
-- Dataset delete (admin-scoped)
+- View all users and datasets across the platform
+- Admin-scoped dataset deletion
 - Accessible only to users with `ADMIN` role
 
 ---
@@ -187,7 +213,7 @@ npm install
 
 ### 2. Configure environment
 
-Create `app/.env` (use `.env.example` as a reference):
+Copy `.env.example` to `.env` and fill in your values:
 
 ```env
 DATABASE_URL="postgresql://<user>:<pass>@<host>-pooler.neon.tech/<db>?sslmode=require"
@@ -220,9 +246,9 @@ npm run dev
 
 Visit `http://localhost:3000`
 
-### 5. Test with sample data
+### 5. Try with sample data
 
-A sample CSV is at `docs/demo-transactions.csv`. Create a dataset, upload it, then hit **Generate Insights**.
+A ready-made CSV is at `docs/demo-transactions.csv`. Create a dataset, upload it, then click **Generate Insights**.
 
 ### CSV format
 
@@ -239,7 +265,7 @@ Negative amounts = expenses. Positive amounts = income.
 
 ## Running Tests
 
-Tests spawn `next start` against a real PostgreSQL database and run 29 integration tests across auth, datasets, upload, metrics, transaction filtering, insights, rename, and delete.
+Tests spawn `next start` against a real PostgreSQL database and run 29 integration tests across auth, datasets, upload, metrics, transaction filtering, insights, rename, and delete. **No mocks.**
 
 ```bash
 npm run build   # required — tests run against the production build
@@ -275,6 +301,8 @@ app/
 │   │   ├── about/                      # About page
 │   │   ├── demo/                       # Demo walkthrough
 │   │   ├── admin/                      # Admin panel
+│   │   ├── privacy/                    # Privacy policy
+│   │   ├── terms/                      # Terms of service
 │   │   └── api/                        # All API route handlers
 │   └── lib/
 │       ├── api.ts                      # Client-side API wrapper + types
@@ -291,12 +319,22 @@ app/
 │   └── migrations/                     # Migration history
 ├── docs/
 │   └── demo-transactions.csv           # Sample data for testing
-└── tests/
-    ├── auth.integration.test.mjs       # Auth endpoint tests
-    ├── datasets.integration.test.mjs   # Dataset CRUD + upload tests
-    ├── admin.integration.test.mjs      # Admin access control tests
-    └── metrics.integration.test.mjs    # Metrics, filters, insights, rename, delete
+├── tests/
+│   ├── auth.integration.test.mjs       # Auth endpoint tests
+│   ├── datasets.integration.test.mjs   # Dataset CRUD + upload tests
+│   ├── admin.integration.test.mjs      # Admin access control tests
+│   └── metrics.integration.test.mjs    # Metrics, filters, insights, rename, delete
+└── .github/
+    └── workflows/
+        └── ci.yml                      # CI: type-check + build + migrate + test
 ```
+
+---
+
+## Built by
+
+**Anish Bhole** — Full-stack Software Engineer  
+[LinkedIn](https://www.linkedin.com/in/anishbhole/) · [Live Demo](https://insightstack-peach.vercel.app) · [GitHub](https://github.com/anishonly121/insightstack-blueprint)
 
 ---
 
