@@ -41,8 +41,6 @@ InsightStack is a **production-grade full-stack web application** that turns raw
 |---|---|---|
 | ![Landing](docs/screenshots/landing.png) | ![Dashboard](docs/screenshots/dashboard.png) | ![Insights](docs/screenshots/insights.png) |
 
-> *Screenshots coming soon — [try it live](https://insightstack-peach.vercel.app) in the meantime.*
-
 ---
 
 ## How It Works
