@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
+import { logger } from "@/lib/logger";
 
 const resetPasswordSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -140,7 +141,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     return jsonWithRequestId(requestId, { data: { ok: true } });
   } catch (err) {
-    console.error("RESET_PASSWORD_ERROR", err);
+    logger.error("RESET_PASSWORD_ERROR", { errorName: err instanceof Error ? err.name : "UnknownError" });
     return errorResponseWithRequestId(requestId, 500, "INTERNAL_SERVER_ERROR", "Something went wrong");
   }
 }
