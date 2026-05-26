@@ -83,7 +83,6 @@ export default function AdminPage() {
       }
     };
     void run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onDeleteDataset = async (id: string, name: string) => {
