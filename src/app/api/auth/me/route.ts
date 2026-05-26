@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { AUTH_COOKIE_NAME, getTokenFromRequest, getUserFromRequest } from "@/lib/auth";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
+import { enforceCsrfIfCookieAuth } from "@/lib/csrf";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
 
@@ -35,6 +36,9 @@ const changePasswordSchema = z.object({
 export async function PATCH(req: Request): Promise<NextResponse> {
   const requestId = getRequestId(req);
   try {
+    const csrfError = enforceCsrfIfCookieAuth(req, requestId);
+    if (csrfError) return csrfError;
+
     const contentType = (req.headers.get("content-type") ?? "").toLowerCase();
     if (!contentType.includes("application/json")) {
       return errorResponseWithRequestId(requestId, 415, "UNSUPPORTED_MEDIA_TYPE", "Content-Type must be application/json");
@@ -71,7 +75,7 @@ export async function PATCH(req: Request): Promise<NextResponse> {
       action: "PASSWORD_CHANGED",
       entityType: "User",
       entityId: user.id,
-      ...getAuditRequestMeta(req),
+      meta: getAuditRequestMeta(req),
     });
 
     return jsonWithRequestId(requestId, { data: { ok: true } });
@@ -88,6 +92,9 @@ const deleteAccountSchema = z.object({
 export async function DELETE(req: Request): Promise<NextResponse> {
   const requestId = getRequestId(req);
   try {
+    const csrfError = enforceCsrfIfCookieAuth(req, requestId);
+    if (csrfError) return csrfError;
+
     const contentType = (req.headers.get("content-type") ?? "").toLowerCase();
     if (!contentType.includes("application/json")) {
       return errorResponseWithRequestId(requestId, 415, "UNSUPPORTED_MEDIA_TYPE", "Content-Type must be application/json");
