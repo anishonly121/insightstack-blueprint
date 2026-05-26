@@ -21,7 +21,9 @@ InsightStack is a **production-grade full-stack web application** that turns raw
 
 - [Screenshots](#screenshots)
 - [How It Works](#how-it-works)
+- [Architecture](#architecture)
 - [Engineering Highlights](#engineering-highlights)
+- [Design Tradeoffs](#design-tradeoffs)
 - [Tech Stack](#tech-stack)
 - [Features](#features)
 - [Database Schema](#database-schema)
@@ -56,6 +58,54 @@ InsightStack is a **production-grade full-stack web application** that turns raw
 
 ---
 
+## Architecture
+
+```mermaid
+flowchart TD
+    subgraph Client["Browser"]
+        UI["Next.js App Router\nReact 19 · TypeScript · Tailwind"]
+    end
+
+    subgraph Vercel["Vercel — Next.js Server"]
+        MW["Auth Middleware\nJWT Bearer + HttpOnly Cookie"]
+        API["API Route Handlers\n/api/*"]
+        RL["Rate Limiter\nRateLimitBucket table"]
+        AL["Audit Logger\nImmutable AuditLog rows"]
+        SNAP["MetricSnapshot\n1-hour server-side cache"]
+    end
+
+    subgraph Storage["PostgreSQL · Neon"]
+        DB[("User · Dataset · Transaction\nMetricSnapshot · Insight\nAuditLog · RateLimitBucket")]
+    end
+
+    subgraph AI["AI Pipeline"]
+        REDACT["PII Redactor\nemail · phone · NRIC · digits"]
+        HASH["Prompt Hash\nskip if cached"]
+        GPT["OpenAI GPT-4o"]
+        ZOD["Zod Schema Validator"]
+        FALLBACK["Local Fallback Analyser"]
+    end
+
+    subgraph Email["SendGrid"]
+        SG["Password Reset Email"]
+    end
+
+    UI -->|HTTPS| MW
+    MW -->|verified identity| API
+    API --> RL & AL & SNAP
+    API <-->|Prisma ORM| DB
+    API --> REDACT
+    REDACT --> HASH
+    HASH -->|cache miss| GPT
+    GPT --> ZOD
+    ZOD -->|valid| API
+    ZOD -->|invalid / timeout| FALLBACK
+    FALLBACK --> API
+    API --> SG
+```
+
+---
+
 ## Engineering Highlights
 
 These are the design decisions that go beyond a typical tutorial project:
@@ -75,6 +125,24 @@ These are the design decisions that go beyond a typical tutorial project:
 **Zod on AI output boundaries** — GPT-4o returns freeform JSON. Schema-validating every response means a malformed reply triggers the local fallback, never a runtime crash. The same Zod schemas are used for both request validation and AI response validation.
 
 **URL-based SSL detection** — Rather than branching on `NODE_ENV` (which is `'production'` in CI too), SSL is detected by checking the connection string for `'localhost'` — a more reliable signal across local, CI, and production environments.
+
+---
+
+## Design Tradeoffs
+
+Every architectural decision has a cost. These are the ones worth discussing in an interview:
+
+**PostgreSQL for rate limiting instead of Redis** — Adds one write per rate-limited endpoint. Acceptable at this scale and eliminates a Redis dependency. At >1k concurrent users, the `RateLimitBucket` table becomes a write bottleneck and Redis would be the right call.
+
+**No mock tests** — Integration tests are slower (30–60s total) and require a live database. This is deliberate. Mocks test that your mock matches your expectations, not that your code works. A real test caught a Prisma query-shape regression mid-development that a unit test would have silently passed.
+
+**MetricSnapshot instead of live aggregation** — Computing dashboard metrics on every page load means scanning all `Transaction` rows per request. The 1-hour snapshot cache trades freshness for constant-time reads. Acceptable for personal finance (yesterday's data is fine); wrong for trading dashboards.
+
+**JWTs instead of server-side sessions** — Sessions require shared state (Redis or a DB table). JWTs are stateless and work naturally across Vercel's serverless functions with no coordination. The tradeoff: tokens can't be revoked before expiry. Mitigated by short TTLs and the HttpOnly cookie path clearing on logout.
+
+**Daily insight quota via AuditLog counting** — Rather than a mutable `insightCount` column that could go wrong under concurrent requests, the quota is enforced by counting immutable AuditLog rows. The count is always accurate; there's no race condition; the log is a useful audit trail regardless.
+
+**Zod at the AI response boundary** — GPT-4o returns freeform JSON. Rather than trusting it, every response is validated against a strict Zod schema. A malformed response triggers the local fallback — the user always gets an answer, even if OpenAI is having a bad day.
 
 ---
 
