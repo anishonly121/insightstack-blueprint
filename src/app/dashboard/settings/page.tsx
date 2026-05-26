@@ -10,7 +10,6 @@ export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
 
-  // ── Password change state ────────────────────────────────────────────────────
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -18,7 +17,6 @@ export default function SettingsPage() {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
 
-  // ── Delete account state ─────────────────────────────────────────────────────
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
