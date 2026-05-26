@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import { LogoMark } from "@/components/LogoMark";
 
 const built = [
   {
@@ -73,14 +74,15 @@ export default function AboutPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-white/6 bg-[#050B18]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-bold tracking-tight text-white">
-            Insight<span className="text-blue-400">Stack</span>
+          <Link href="/" className="flex items-center gap-2 text-[15px] font-bold tracking-tight text-white">
+            <LogoMark size={24} />
+            <span>Insight<span className="text-blue-400">Stack</span></span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/demo" className="text-sm font-medium text-zinc-500 transition hover:text-white">Demo</Link>
             <Link
               href="/login"
-              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-zinc-900 shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400"
+              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400"
             >
               Open App
             </Link>
@@ -240,7 +242,7 @@ export default function AboutPage() {
           <ul className="space-y-5">
             {learned.map((item, i) => (
               <li key={i} className="flex items-start gap-4">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-black text-zinc-900 shadow-[0_0_12px_rgba(59,130,246,0.25)]">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-black text-white shadow-[0_0_12px_rgba(59,130,246,0.25)]">
                   {i + 1}
                 </span>
                 <p className="pt-0.5 leading-relaxed text-zinc-400">{item}</p>
@@ -294,7 +296,7 @@ export default function AboutPage() {
           </Link>
           <Link
             href="/register"
-            className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-zinc-900 shadow-[0_0_25px_rgba(59,130,246,0.35)] transition hover:bg-blue-400"
+            className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-white shadow-[0_0_25px_rgba(59,130,246,0.35)] transition hover:bg-blue-400"
           >
             Open the app →
           </Link>

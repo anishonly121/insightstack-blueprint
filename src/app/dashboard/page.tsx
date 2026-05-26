@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { LogoMark } from "@/components/LogoMark";
 import { useRouter } from "next/navigation";
 import {
   api,
@@ -193,10 +194,11 @@ export default function DashboardPage() {
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Link href="/" className="text-xs font-extrabold uppercase tracking-[0.15em] text-blue-500 transition hover:text-blue-400">
-              InsightStack
+            <Link href="/" className="mb-2 flex items-center gap-1.5 w-fit">
+              <LogoMark size={20} />
+              <span className="text-xs font-bold tracking-tight text-zinc-400 transition hover:text-white">Insight<span className="text-blue-400">Stack</span></span>
             </Link>
-            <h1 className="mt-1 text-2xl font-black text-white">
+            <h1 className="text-2xl font-black text-white">
               {user ? `Welcome back, ${user.name.split(" ")[0]}` : "Dashboard"}
             </h1>
             {user && <p className="text-sm text-zinc-500">{user.email}</p>}
@@ -255,7 +257,7 @@ export default function DashboardPage() {
             <button
               type="submit"
               disabled={createLoading}
-              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-zinc-900 shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 hover:shadow-[0_0_30px_rgba(59,130,246,0.45)] disabled:opacity-50"
+              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 hover:shadow-[0_0_30px_rgba(59,130,246,0.45)] disabled:opacity-50"
             >
               {createLoading ? "Creating..." : "+ Create"}
             </button>
@@ -314,7 +316,7 @@ export default function DashboardPage() {
                                 onChange={(e) => setAction(dataset.id, { renameValue: e.target.value })}
                                 autoFocus
                               />
-                              <button type="submit" className="rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-black text-zinc-900 hover:bg-blue-400">
+                              <button type="submit" className="rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-black text-white hover:bg-blue-400">
                                 Save
                               </button>
                               <button type="button" onClick={() => setAction(dataset.id, { renaming: false })} className="rounded-lg border border-white/8 px-3 py-1.5 text-xs font-semibold text-zinc-400 hover:bg-zinc-800 hover:text-white">
@@ -350,7 +352,7 @@ export default function DashboardPage() {
                         <div className="flex shrink-0 items-center gap-2">
                           <Link
                             href={`/dashboard/datasets/${dataset.id}`}
-                            className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-black text-zinc-900 shadow-[0_0_15px_rgba(59,130,246,0.25)] transition hover:bg-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.4)]"
+                            className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-black text-white shadow-[0_0_15px_rgba(59,130,246,0.25)] transition hover:bg-blue-400 hover:shadow-[0_0_25px_rgba(59,130,246,0.4)]"
                           >
                             Open →
                           </Link>
@@ -395,7 +397,7 @@ export default function DashboardPage() {
                           type="button"
                           onClick={() => void onGenerateInsights(dataset.id)}
                           disabled={state.insightLoading || dataset.status !== "PARSED"}
-                          className="rounded-lg bg-cyan-500 px-3 py-2.5 text-sm font-black text-zinc-900 shadow-[0_0_15px_rgba(6,182,212,0.25)] transition hover:bg-cyan-400 hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-lg bg-cyan-500 px-3 py-2.5 text-sm font-black text-white shadow-[0_0_15px_rgba(6,182,212,0.25)] transition hover:bg-cyan-400 hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] disabled:cursor-not-allowed disabled:opacity-40"
                           title={dataset.status !== "PARSED" ? "Upload a CSV first" : undefined}
                         >
                           {state.insightLoading ? "Generating…" : "✦ AI Insights"}

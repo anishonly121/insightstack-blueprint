@@ -123,7 +123,7 @@ export default function AdminPage() {
           </p>
           <Link
             href="/dashboard"
-            className="inline-block rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-zinc-900 shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400"
+            className="inline-block rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400"
           >
             Back to Dashboard
           </Link>

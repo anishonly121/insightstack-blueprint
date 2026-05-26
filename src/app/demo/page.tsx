@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import { LogoMark } from "@/components/LogoMark";
 
 const steps = [
   {
@@ -60,14 +61,15 @@ export default function DemoPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-white/6 bg-[#050B18]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-bold tracking-tight text-white">
-            Insight<span className="text-blue-400">Stack</span>
+          <Link href="/" className="flex items-center gap-2 text-[15px] font-bold tracking-tight text-white">
+            <LogoMark size={24} />
+            <span>Insight<span className="text-blue-400">Stack</span></span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/about" className="text-sm font-medium text-zinc-500 transition hover:text-white">About</Link>
             <Link
               href="/login"
-              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-zinc-900 shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400"
+              className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400"
             >
               Open App
             </Link>
@@ -95,7 +97,7 @@ export default function DemoPage() {
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
               href="/register"
-              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-zinc-900 shadow-[0_0_25px_rgba(59,130,246,0.35)] transition hover:bg-blue-400"
+              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-white shadow-[0_0_25px_rgba(59,130,246,0.35)] transition hover:bg-blue-400"
             >
               Try it yourself →
             </Link>
@@ -119,7 +121,7 @@ export default function DemoPage() {
               <div key={step.n} className="flex gap-6">
                 <div className="flex flex-col items-center">
                   <div
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-black text-zinc-900"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-black text-white"
                     style={{ backgroundColor: step.color, boxShadow: `0 0 20px ${step.color}40` }}
                   >
                     {step.n}
@@ -194,7 +196,7 @@ export default function DemoPage() {
           <p className="mt-3 text-zinc-500">Upload a CSV and get AI analysis in under a minute.</p>
           <Link
             href="/register"
-            className="mt-8 inline-block rounded-xl bg-blue-500 px-10 py-4 text-sm font-black text-zinc-900 shadow-[0_0_30px_rgba(59,130,246,0.4)] transition hover:bg-blue-400 hover:shadow-[0_0_50px_rgba(59,130,246,0.6)]"
+            className="mt-8 inline-block rounded-xl bg-blue-500 px-10 py-4 text-sm font-black text-white shadow-[0_0_30px_rgba(59,130,246,0.4)] transition hover:bg-blue-400 hover:shadow-[0_0_50px_rgba(59,130,246,0.6)]"
           >
             Get started for free →
           </Link>
