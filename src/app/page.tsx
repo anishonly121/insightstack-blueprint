@@ -531,7 +531,7 @@ export default function Home() {
           <div className="hidden items-center gap-1 sm:flex">
             <Link href="/demo" className="rounded-lg px-3 py-2 text-sm text-[#8892A4] transition hover:bg-white/5 hover:text-white">Demo</Link>
             <Link href="/about" className="rounded-lg px-3 py-2 text-sm text-[#8892A4] transition hover:bg-white/5 hover:text-white">About</Link>
-            <a href="/#pricing" className="rounded-lg px-3 py-2 text-sm text-[#8892A4] transition hover:bg-white/5 hover:text-white">Pricing</a>
+            <Link href="/#pricing" className="rounded-lg px-3 py-2 text-sm text-[#8892A4] transition hover:bg-white/5 hover:text-white">Pricing</Link>
             <div className="mx-2 h-4 w-px bg-white/10" />
             <Link href="/login" className="rounded-lg px-4 py-2 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white">Log in</Link>
             <Link href="/register" className="group relative overflow-hidden rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]">
@@ -989,7 +989,7 @@ export default function Home() {
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[#8892A4]/50">Product</p>
                 <div className="flex flex-col gap-2 text-[#8892A4]">
                   <Link href="/demo" className="transition hover:text-white">Demo</Link>
-                  <a href="/#pricing" className="transition hover:text-white">Pricing</a>
+                  <Link href="/#pricing" className="transition hover:text-white">Pricing</Link>
                   <Link href="/about" className="transition hover:text-white">About</Link>
                 </div>
               </div>
