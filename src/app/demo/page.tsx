@@ -1,5 +1,11 @@
-﻿import Link from "next/link";
+﻿import type { Metadata } from "next";
+import Link from "next/link";
 import { LogoMark } from "@/components/LogoMark";
+
+export const metadata: Metadata = {
+  title: "How it works — InsightStack",
+  description: "A step-by-step walkthrough of InsightStack: CSV upload, auto-parsing, metrics computation, and GPT-4o AI spending analysis. See the full engineering breakdown.",
+};
 
 const steps = [
   {

@@ -1,5 +1,11 @@
-﻿import Link from "next/link";
+﻿import type { Metadata } from "next";
+import Link from "next/link";
 import { LogoMark } from "@/components/LogoMark";
+
+export const metadata: Metadata = {
+  title: "About — InsightStack",
+  description: "InsightStack is a production-grade financial analytics platform built by Anish Bhole. Full-stack Next.js, PostgreSQL, OpenAI GPT-4o — with 29 integration tests and real AI insights.",
+};
 
 const built = [
   {
