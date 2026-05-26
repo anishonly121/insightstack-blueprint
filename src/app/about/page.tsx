@@ -95,22 +95,56 @@ export default function AboutPage() {
           style={{ background: "radial-gradient(ellipse 60% 50% at 30% 0%, rgba(59,130,246,0.06) 0%, transparent 70%)" }}
         />
         <div className="relative mx-auto max-w-5xl">
-          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/8 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-            Portfolio Project
-          </span>
-          <h1 className="mt-4 text-4xl font-black leading-tight text-white sm:text-5xl">
+
+          {/* Builder identity — top of page, hard to miss */}
+          <div className="mb-10 flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-[#0A1628]/60 px-5 py-4">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-base font-black text-white shadow-[0_0_20px_rgba(59,130,246,0.35)]">AB</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-white">Anish Bhole</p>
+              <p className="text-sm text-zinc-500">Full-stack Software Engineer · AI & Finance Applications</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href="https://www.linkedin.com/in/anishbhole/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-zinc-300 transition hover:border-blue-500/30 hover:text-blue-400"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                LinkedIn
+              </a>
+              <a
+                href="https://github.com/anishonly121/insightstack-blueprint"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-zinc-300 transition hover:border-white/20 hover:text-white"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                GitHub
+              </a>
+            </div>
+          </div>
+
+          <h1 className="text-4xl font-black leading-tight text-white sm:text-5xl">
             About InsightStack
           </h1>
-          <p className="mt-5 max-w-2xl text-lg text-zinc-400">
-            A production-style full-stack application demonstrating authentication,
-            data ingestion, analytics, and AI integration — built to the standard
-            I hold myself to in a professional environment.
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
+
+          {/* Dual-audience intro */}
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <div className="rounded-xl border border-blue-500/15 bg-blue-500/5 p-4">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-400">For businesses</p>
+              <p className="text-sm leading-relaxed text-zinc-400">InsightStack is a production-ready financial analytics platform. Upload any CSV, get AI-powered anomaly detection and plain-English spending insights in under 60 seconds. Built to handle real data, at real scale.</p>
+            </div>
+            <div className="rounded-xl border border-violet-500/15 bg-violet-500/5 p-4">
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-violet-400">For recruiters</p>
+              <p className="text-sm leading-relaxed text-zinc-400">This is a full-stack project built solo by Anish Bhole — demonstrating auth systems, data pipelines, AI integration, and production hardening across a modern Next.js + PostgreSQL stack.</p>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/register"
-              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-zinc-900 shadow-[0_0_25px_rgba(59,130,246,0.35)] transition hover:bg-blue-400 hover:shadow-[0_0_40px_rgba(59,130,246,0.55)]"
+              className="rounded-xl bg-blue-500 px-6 py-3 text-sm font-black text-white shadow-[0_0_25px_rgba(59,130,246,0.35)] transition hover:bg-blue-400 hover:shadow-[0_0_40px_rgba(59,130,246,0.55)]"
             >
               Try it live →
             </Link>
@@ -121,6 +155,12 @@ export default function AboutPage() {
               className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/8"
             >
               View source ↗
+            </a>
+            <a
+              href="mailto:bholeanish3@gmail.com"
+              className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-zinc-300 transition hover:border-white/20 hover:text-white"
+            >
+              Get in touch
             </a>
           </div>
         </div>

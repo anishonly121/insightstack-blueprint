@@ -465,7 +465,7 @@ const pricingPlans = [
   {
     name: "Enterprise", price: "Custom", period: "", tagline: "For teams with compliance requirements.",
     features: ["Everything in Pro", "Team collaboration", "SSO / SAML auth", "Dedicated infrastructure", "Custom data retention", "SLA guarantee", "White-label option"],
-    cta: "Talk to sales →", href: "/about", hot: false,
+    cta: "Talk to sales →", href: "mailto:bholeanish3@gmail.com", hot: false,
   },
 ];
 
@@ -942,7 +942,12 @@ export default function Home() {
                 About the project
               </Link>
             </div>
-            <p className="mt-6 text-xs text-[#8892A4]/50">Built end-to-end by a full-stack engineer · Open source · Deployed on Vercel</p>
+            <p className="mt-6 text-xs text-[#8892A4]/50">
+              Built end-to-end by{" "}
+              <a href="https://www.linkedin.com/in/anishbhole/" target="_blank" rel="noopener noreferrer" className="text-blue-400/70 transition hover:text-blue-400">Anish Bhole</a>
+              {" "}· Open source ·{" "}
+              <a href="https://github.com/anishonly121/insightstack-blueprint" target="_blank" rel="noopener noreferrer" className="transition hover:text-zinc-300">GitHub ↗</a>
+            </p>
           </Reveal>
         </div>
       </section>
@@ -984,7 +989,11 @@ export default function Home() {
           </div>
           <div className="flex flex-col items-center justify-between gap-4 border-t border-white/[0.05] pt-8 sm:flex-row">
             <p className="text-xs text-[#8892A4]/40">© 2026 InsightStack. Built with Next.js, PostgreSQL, OpenAI & Vercel.</p>
-            <p className="text-xs text-[#8892A4]/40">Full-stack portfolio project</p>
+            <div className="flex items-center gap-4 text-xs text-[#8892A4]/40">
+              <Link href="/privacy" className="transition hover:text-zinc-400">Privacy</Link>
+              <Link href="/terms" className="transition hover:text-zinc-400">Terms</Link>
+              <a href="mailto:bholeanish3@gmail.com" className="transition hover:text-zinc-400">Contact</a>
+            </div>
           </div>
         </div>
       </footer>
