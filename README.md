@@ -237,6 +237,7 @@ RateLimitBucket (keyed by action + user + IP)
 | `GET` | `/api/auth/me` | Get current user (Bearer or cookie) |
 | `PATCH` | `/api/auth/me` | Change password (requires current password) |
 | `DELETE` | `/api/auth/me` | Delete account + all data (requires password confirmation) |
+| `GET` | `/api/auth/me/quota` | Today's insight usage vs. 30/day limit |
 | `POST` | `/api/auth/logout` | Clear auth cookie |
 | `POST` | `/api/auth/forgot-password` | Send password reset email |
 | `POST` | `/api/auth/reset-password` | Consume reset token, set new password |
@@ -266,7 +267,7 @@ RateLimitBucket (keyed by action + user + IP)
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/health` | Health check with request ID |
-| `GET` | `/api/activity` | Recent audit log for current user |
+| `GET` | `/api/activity` | Paginated audit log (`?page=&pageSize=`) for current user |
 
 ---
 
