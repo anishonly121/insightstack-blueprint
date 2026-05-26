@@ -933,11 +933,10 @@ export default function Home() {
               into decisions that move the bottom line.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
-              <Magnetic>
-                <Link href="/register" className="animate-border-spin rounded-xl px-10 py-4 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-px">
-                  Create your account — it&apos;s free →
-                </Link>
-              </Magnetic>
+              <Link href="/register" className="group relative overflow-hidden rounded-xl bg-blue-500 px-10 py-4 text-sm font-semibold text-white shadow-[0_0_25px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] transition hover:bg-blue-400 hover:shadow-[0_0_40px_rgba(59,130,246,0.55)]">
+                <span className="relative z-10">Create your account — it&apos;s free →</span>
+                <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/10 to-white/0 transition-transform duration-700 group-hover:translate-x-[100%]" />
+              </Link>
               <Link href="/about" className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-10 py-4 text-sm font-medium text-zinc-300 backdrop-blur-sm transition hover:border-white/[0.14] hover:text-white">
                 About the project
               </Link>
