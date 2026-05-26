@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { AUTH_COOKIE_NAME, AUTH_TOKEN_MAX_AGE_SECONDS, signToken } from "@/lib/auth";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
+import { logger } from "@/lib/logger";
 
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -100,7 +101,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     return response;
   } catch (err) {
-    console.error("REGISTER_ERROR", err);
+    logger.error("REGISTER_ERROR", { errorName: err instanceof Error ? err.name : "UnknownError" });
     return errorResponseWithRequestId(requestId, 500, "INTERNAL_SERVER_ERROR", "Something went wrong");
   }
 }

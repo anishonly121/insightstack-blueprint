@@ -9,7 +9,7 @@
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e)
 
-InsightStack is a **production-grade full-stack web application** that turns raw CSV bank exports into a visual financial dashboard with OpenAI-generated spending insights. Built end-to-end with authentication, rate limiting, audit logging, caching, and 29 integration tests — no mocks.
+InsightStack is a **production-grade full-stack web application** that turns raw CSV bank exports into a visual financial dashboard with OpenAI-generated spending insights. Built end-to-end with authentication, rate limiting, audit logging, caching, structured logging, 29 integration tests and a Playwright E2E suite — no mocks.
 
 **[Live Demo →](https://insightstack-peach.vercel.app)** · **[How It Works](https://insightstack-peach.vercel.app/demo)** · **[About the Project](https://insightstack-peach.vercel.app/about)**
 
@@ -124,6 +124,10 @@ These are the design decisions that go beyond a typical tutorial project:
 
 **Zod on AI output boundaries** — GPT-4o returns freeform JSON. Schema-validating every response means a malformed reply triggers the local fallback, never a runtime crash. The same Zod schemas are used for both request validation and AI response validation.
 
+**Structured JSON logging** — All API-layer errors and key events (`INSIGHTS_PROMPT_STATS`, `RATE_LIMIT_CLEANUP_ERROR`, etc.) are emitted via a typed logger that outputs JSON in production (for log aggregators) and human-readable lines in development. Correlation IDs flow through every log entry.
+
+**Playwright E2E suite** — Beyond the 29 integration tests, a Playwright browser-level suite drives the full user journey: landing page → register → create dataset → upload CSV → verify PARSED status → navigate to dataset detail. Runs headlessly against localhost or the live deployment.
+
 **URL-based SSL detection** — Rather than branching on `NODE_ENV` (which is `'production'` in CI too), SSL is detected by checking the connection string for `'localhost'` — a more reliable signal across local, CI, and production environments.
 
 ---
@@ -161,7 +165,8 @@ Every architectural decision has a cost. These are the ones worth discussing in 
 | AI | OpenAI GPT-4o |
 | Email | SendGrid (password reset) |
 | Testing | Node.js built-in test runner (29 integration tests) |
-| CI | GitHub Actions (build + type-check + migrate + test) |
+| CI | GitHub Actions (lint + type-check + build + migrate + 29 integration tests) |
+| E2E | Playwright (8 tests — auth flow, upload, dataset detail) |
 | Deployment | Vercel |
 
 ---
@@ -331,6 +336,8 @@ Negative amounts = expenses. Positive amounts = income.
 
 ## Running Tests
 
+### Integration tests (29)
+
 Tests spawn `next start` against a real PostgreSQL database and run 29 integration tests across auth, datasets, upload, metrics, transaction filtering, insights, rename, and delete. **No mocks.**
 
 ```bash
@@ -339,6 +346,19 @@ npm test
 ```
 
 Tests run against whatever `DATABASE_URL` is set in your environment. A separate test database is recommended.
+
+### E2E tests (Playwright)
+
+End-to-end tests drive a real Chromium browser through the full user journey: landing page, registration, dataset creation, CSV upload, and dataset detail navigation.
+
+```bash
+# Against localhost (requires a running server)
+npm run build && npm start &
+npm run test:e2e
+
+# Against the live deployment
+BASE_URL=https://insightstack-peach.vercel.app npm run test:e2e
+```
 
 ---
 
@@ -390,9 +410,18 @@ app/
 │   ├── datasets.integration.test.mjs   # Dataset CRUD + upload tests
 │   ├── admin.integration.test.mjs      # Admin access control tests
 │   └── metrics.integration.test.mjs    # Metrics, filters, insights, rename, delete
+├── tests/
+│   ├── auth.integration.test.mjs       # Auth endpoint tests
+│   ├── datasets.integration.test.mjs   # Dataset CRUD + upload tests
+│   ├── admin.integration.test.mjs      # Admin access control tests
+│   ├── metrics.integration.test.mjs    # Metrics, filters, insights, rename, delete
+│   └── e2e/
+│       └── full-journey.test.mjs       # Playwright E2E: auth → upload → detail
 └── .github/
-    └── workflows/
-        └── ci.yml                      # CI: type-check + build + migrate + test
+    ├── workflows/
+    │   └── ci.yml                      # CI: lint + type-check + build + migrate + test
+    ├── ISSUE_TEMPLATE/                 # Bug report + feature request templates
+    └── PULL_REQUEST_TEMPLATE.md
 ```
 
 ---

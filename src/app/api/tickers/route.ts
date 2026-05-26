@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 const SYMBOLS = ["AAPL","MSFT","TSLA","NVDA","GOOGL","META","AMZN","JPM","AMD","SPY","QQQ","GLD"];
 
@@ -31,7 +32,7 @@ export async function GET() {
     );
     return NextResponse.json({ live: true, tickers: results });
   } catch (err) {
-    console.error("[tickers]", err);
+    logger.error("TICKERS_FETCH_ERROR", { errorName: err instanceof Error ? err.name : "UnknownError" });
     return NextResponse.json({ live: false, reason: "fetch_error" }, { status: 500 });
   }
 }

@@ -8,6 +8,7 @@ import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { env } from "@/lib/env";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
+import { logger } from "@/lib/logger";
 
 const idSchema = z.string().uuid("Invalid dataset id");
 const MAX_TRANSACTIONS = 200;
@@ -564,7 +565,7 @@ export async function POST(
       instruction: promptInstruction,
     };
 
-    console.info("INSIGHTS_PROMPT_STATS", {
+    logger.info("INSIGHTS_PROMPT_STATS", {
       requestId,
       datasetId: dataset.id,
       transactionsIncluded: promptBuild.transactionsIncluded,
@@ -577,7 +578,7 @@ export async function POST(
     let model = INSIGHTS_MODEL;
 
     if (isOpenAiStubbed) {
-      console.info("OPENAI_STUBBED_IN_TEST", { requestId, datasetId: dataset.id });
+      logger.info("OPENAI_STUBBED_IN_TEST", { requestId, datasetId: dataset.id });
       insightJson = buildFallbackInsight(transactions);
       summary = insightJson.summary;
       model = "stub-test-v1";

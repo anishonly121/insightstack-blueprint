@@ -6,6 +6,7 @@ import { AUTH_COOKIE_NAME, AUTH_TOKEN_MAX_AGE_SECONDS, signToken } from "@/lib/a
 import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
+import { logger } from "@/lib/logger";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -120,7 +121,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     return response;
   } catch (err) {
-    console.error("LOGIN_ERROR", err);
+    logger.error("LOGIN_ERROR", { errorName: err instanceof Error ? err.name : "UnknownError" });
     return errorResponseWithRequestId(requestId, 500, "INTERNAL_SERVER_ERROR", "Something went wrong");
   }
 }

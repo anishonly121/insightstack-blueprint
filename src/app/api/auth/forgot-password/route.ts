@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
+import { logger } from "@/lib/logger";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -25,7 +26,7 @@ const logSendGridError = (
   requestMeta: Record<string, string>,
   err?: unknown,
 ): void => {
-  console.error("FORGOT_PASSWORD_SENDGRID_ERROR", {
+  logger.error("FORGOT_PASSWORD_SENDGRID_ERROR", {
     code,
     emailHash,
     ip: requestMeta.ip,
@@ -140,7 +141,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     return jsonWithRequestId(requestId, { data: { ok: true } });
   } catch (err) {
-    console.error("FORGOT_PASSWORD_ERROR", err);
+    logger.error("FORGOT_PASSWORD_ERROR", { errorName: err instanceof Error ? err.name : "UnknownError" });
     return errorResponseWithRequestId(requestId, 500, "INTERNAL_SERVER_ERROR", "Something went wrong");
   }
 }

@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 type RateLimitInput = {
   key: string;
@@ -34,7 +35,7 @@ export async function rateLimitOrThrow(
     try {
       await cleanupExpiredRateLimitBuckets();
     } catch (err) {
-      console.error("RATE_LIMIT_CLEANUP_ERROR", {
+      logger.error("RATE_LIMIT_CLEANUP_ERROR", {
         errorName: err instanceof Error ? err.name : "UnknownError",
       });
     }
