@@ -315,6 +315,12 @@ export default function DashboardDatasetDetailPage() {
               </span>
             )}
             <Link
+              href="/dashboard/activity"
+              className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 transition hover:text-white"
+            >
+              Activity
+            </Link>
+            <Link
               href="/dashboard/settings"
               className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 transition hover:text-white"
             >

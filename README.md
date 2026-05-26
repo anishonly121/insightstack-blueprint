@@ -339,6 +339,13 @@ Negative amounts = expenses. Positive amounts = income.
 
 ## Running Tests
 
+### Type-check + lint
+
+```bash
+npm run type-check   # tsc --noEmit (strict mode)
+npm run lint         # ESLint
+```
+
 ### Integration tests (29)
 
 Tests spawn `next start` against a real PostgreSQL database and run 29 integration tests across auth, datasets, upload, metrics, transaction filtering, insights, rename, and delete. **No mocks.**
