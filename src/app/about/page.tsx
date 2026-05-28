@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { AboutClient } from "./AboutClient";
 
 export const metadata: Metadata = {
-  title: "About — Anish Bhole",
+  title: "About — InsightStack",
   description:
-    "Anish Bhole — full-stack software engineer and IT student at Singapore Polytechnic. Currently interning at CapitaLand. Builds production-grade apps, AI pipelines, and IoT systems. Based in Singapore.",
+    "InsightStack is a production-grade AI financial analytics platform. 29 integration tests, zero mocks, 12-layer security, OpenAI GPT-4o insights — from CSV to analysis in 60 seconds.",
 };
 
 export default function AboutPage() {
