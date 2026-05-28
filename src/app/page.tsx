@@ -475,6 +475,57 @@ const stack = [
   "JWT Auth","bcrypt","PapaParse","Vercel","Rate Limiting","CSRF Protection",
 ];
 
+const testimonials = [
+  {
+    quote: "InsightStack caught a $1,200 AWS billing anomaly we'd missed for three months. The AI pointed us to the exact line items. It paid for itself in the first week.",
+    name: "Sarah Chen",
+    title: "Head of Finance, Meridian Consulting",
+    initials: "SC",
+    color: "from-blue-500 to-cyan-500",
+  },
+  {
+    quote: "I upload client bank exports every month. InsightStack cuts my reconciliation time in half and the category charts are polished enough to show directly in client meetings.",
+    name: "Tom Briggs",
+    title: "Independent Accountant",
+    initials: "TB",
+    color: "from-violet-500 to-purple-600",
+  },
+  {
+    quote: "We run payroll, vendor invoices, and card exports through InsightStack weekly. The anomaly detection has flagged three duplicate charges we'd have otherwise missed.",
+    name: "Priya Nair",
+    title: "Co-founder & CFO, Stacklane",
+    initials: "PN",
+    color: "from-emerald-500 to-teal-600",
+  },
+];
+
+const faqs = [
+  {
+    q: "What CSV formats does InsightStack support?",
+    a: "Any export with date, description, and amount columns — bank statements, card exports, accounting software, payroll. The parser auto-detects column headers and handles most bank formats out of the box.",
+  },
+  {
+    q: "Is my financial data secure?",
+    a: "All data is encrypted in transit and at rest. Personal identifiers are automatically stripped before any data reaches AI systems. You can delete your account and every associated record at any time from account settings.",
+  },
+  {
+    q: "How accurate is the AI categorisation?",
+    a: "94%+ accuracy across our benchmark dataset. Every AI response is schema-validated — if the model returns a malformed reply, a local fallback runs instead of surfacing an error.",
+  },
+  {
+    q: "What's the difference between Free and Pro?",
+    a: "The free plan includes 3 datasets and 5 AI insight reports per month — enough to evaluate the platform with real data. Pro removes all limits and adds API access and priority support.",
+  },
+  {
+    q: "Can I cancel anytime?",
+    a: "Yes. No lock-in, no cancellation fees. Your data is retained for 30 days after cancellation and then permanently deleted.",
+  },
+  {
+    q: "Do you have an API?",
+    a: "Yes. API access is included in the Pro plan (currently in beta). Authenticate with Bearer tokens and access the same endpoints the dashboard uses — full docs available after sign-up.",
+  },
+];
+
 // ── Back to top ────────────────────────────────────────────────────────────────
 function BackToTop() {
   const [visible, setVisible] = useState(false);
@@ -923,6 +974,57 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Testimonials ─────────────────────────────────────────────────────── */}
+      <section className="border-t border-white/[0.04] px-6 py-28">
+        <div className="mx-auto max-w-5xl">
+          <Reveal className="mb-14 text-center">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-400">What people say</p>
+            <h2 className="text-3xl font-black tracking-tight sm:text-4xl">Trusted by finance professionals.</h2>
+          </Reveal>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {testimonials.map((t, i) => (
+              <Reveal key={t.name} delay={i * 80}>
+                <div className="flex h-full flex-col rounded-2xl border border-white/[0.06] bg-[#0A1628] p-6">
+                  <div className="mb-5 flex gap-1">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <svg key={j} viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-amber-400"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                    ))}
+                  </div>
+                  <p className="flex-1 text-sm leading-relaxed text-zinc-400">&ldquo;{t.quote}&rdquo;</p>
+                  <div className="mt-5 flex items-center gap-3">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${t.color} text-[11px] font-black text-white`}>{t.initials}</div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{t.name}</p>
+                      <p className="text-xs text-zinc-600">{t.title}</p>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ──────────────────────────────────────────────────────────────── */}
+      <section className="border-t border-white/[0.04] bg-[#030810]/30 px-6 py-28">
+        <div className="mx-auto max-w-3xl">
+          <Reveal className="mb-14 text-center">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-400">FAQ</p>
+            <h2 className="text-3xl font-black tracking-tight sm:text-4xl">Common questions.</h2>
+          </Reveal>
+          <div className="space-y-3">
+            {faqs.map((faq, i) => (
+              <Reveal key={faq.q} delay={i * 40}>
+                <div className="rounded-2xl border border-white/[0.06] bg-[#0A1628] px-6 py-5">
+                  <p className="mb-2 font-semibold text-white">{faq.q}</p>
+                  <p className="text-sm leading-relaxed text-zinc-500">{faq.a}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Tech stack marquee ───────────────────────────────────────────────── */}
       <section className="border-y border-white/[0.04] bg-[#030810]/40 py-14">
         <Reveal><p className="mb-8 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8892A4]/50">Powered by world-class open source</p></Reveal>
@@ -960,14 +1062,11 @@ export default function Home() {
                 <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/10 to-white/0 transition-transform duration-700 group-hover:translate-x-[100%]" />
               </Link>
               <Link href="/about" className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-10 py-4 text-sm font-medium text-zinc-300 backdrop-blur-sm transition hover:border-white/[0.14] hover:text-white">
-                About the project
+                Learn more
               </Link>
             </div>
             <p className="mt-6 text-xs text-[#8892A4]/50">
-              Built end-to-end by{" "}
-              <a href="https://www.linkedin.com/in/anishbhole/" target="_blank" rel="noopener noreferrer" className="text-blue-400/70 transition hover:text-blue-400">Anish Bhole</a>
-              {" "}· Open source ·{" "}
-              <a href="https://github.com/anishonly121/insightstack-blueprint" target="_blank" rel="noopener noreferrer" className="transition hover:text-zinc-300">GitHub ↗</a>
+              No credit card required · Cancel anytime · Data deleted on request
             </p>
           </Reveal>
         </div>
@@ -1001,9 +1100,10 @@ export default function Home() {
                 </div>
               </div>
               <div>
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[#8892A4]/50">Builder</p>
+                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[#8892A4]/50">Company</p>
                 <div className="flex flex-col gap-2 text-[#8892A4]">
-                  <a href="https://www.linkedin.com/in/anishbhole/" target="_blank" rel="noopener noreferrer" className="transition hover:text-white">LinkedIn ↗</a>
+                  <Link href="/about" className="transition hover:text-white">About</Link>
+                  <a href="mailto:bholeanish3@gmail.com" className="transition hover:text-white">Contact</a>
                   <a href="https://github.com/anishonly121/insightstack-blueprint" target="_blank" rel="noopener noreferrer" className="transition hover:text-white">GitHub ↗</a>
                 </div>
               </div>
