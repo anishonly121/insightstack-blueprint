@@ -111,7 +111,7 @@ export default function DemoPage() {
               href="/about"
               className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/8"
             >
-              About the project
+              Learn more
             </Link>
           </div>
         </div>
