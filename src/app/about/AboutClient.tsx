@@ -255,7 +255,10 @@ function SecurityScan({ active }: { active: boolean }) {
   const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
-    if (active && !scanning) setScanning(true);
+    if (active && !scanning) {
+      const t = setTimeout(() => setScanning(true), 0);
+      return () => clearTimeout(t);
+    }
   }, [active, scanning]);
 
   useEffect(() => {
