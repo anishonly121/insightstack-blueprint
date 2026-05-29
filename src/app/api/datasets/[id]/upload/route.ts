@@ -8,6 +8,8 @@ import { enforceCsrfIfCookieAuth } from "@/lib/csrf";
 import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
+import { sendBudgetAlertEmail } from "@/lib/alerts";
+import { logger } from "@/lib/logger";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -214,6 +216,51 @@ export async function POST(
         ...requestMeta,
       },
     });
+
+    // Fire-and-forget: check budgets and send alert if any category hits 80%+
+    if (nextStatus === "PARSED" && rowsToInsert.length > 0) {
+      void (async () => {
+        try {
+          const [budgets, fullUser, datasetRecord] = await Promise.all([
+            prisma.budget.findMany({ where: { userId: user.id } }),
+            prisma.user.findUnique({ where: { id: user.id }, select: { emailDigestEnabled: true } }),
+            prisma.dataset.findUnique({ where: { id: dataset.id }, select: { name: true } }),
+          ]);
+
+          if (!budgets.length || !fullUser?.emailDigestEnabled) return;
+
+          const categoryTotals = new Map<string, number>();
+          for (const tx of rowsToInsert) {
+            const amt = Math.abs(Number(tx.amount));
+            categoryTotals.set(tx.category, (categoryTotals.get(tx.category) ?? 0) + amt);
+          }
+
+          const alerts = budgets
+            .map((b) => {
+              const spent = categoryTotals.get(b.category) ?? 0;
+              const limit = Number(b.monthlyLimit.toString());
+              const pct = limit > 0 ? (spent / limit) * 100 : 0;
+              return { category: b.category, spent, limit, pct };
+            })
+            .filter((a) => a.pct >= 80);
+
+          if (!alerts.length) return;
+
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://insightstack-peach.vercel.app";
+          await sendBudgetAlertEmail({
+            to: user.email,
+            name: user.name.split(" ")[0] ?? user.name,
+            datasetName: datasetRecord?.name ?? "your dataset",
+            dashboardUrl: appUrl,
+            alerts,
+          });
+
+          logger.info("BUDGET_ALERT_SENT", { userId: user.id, alertCount: alerts.length });
+        } catch (err) {
+          logger.error("BUDGET_ALERT_FAILED", { userId: user.id, error: err instanceof Error ? err.message : String(err) });
+        }
+      })();
+    }
 
     return jsonWithRequestId(requestId, { data: updated });
   } catch {

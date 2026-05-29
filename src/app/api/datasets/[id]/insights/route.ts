@@ -9,15 +9,13 @@ import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { env } from "@/lib/env";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
+import { computeMetrics, detectAnomalies, type AnomalyStat, type CategoryStat } from "@/lib/metrics";
+import { getInsightsQuota } from "@/lib/subscription";
 
 const idSchema = z.string().uuid("Invalid dataset id");
-const MAX_TRANSACTIONS = 200;
-const MAX_DESCRIPTION_LENGTH = 180;
-const MAX_OPENAI_TRANSACTIONS = 100;
-const MAX_OPENAI_CHARS = 50_000;
-const DAILY_INSIGHTS_QUOTA = 30;
 const INSIGHTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const INSIGHTS_MODEL = "gpt-4o-mini";
+
 const listInsightsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
@@ -25,7 +23,7 @@ const listInsightsQuerySchema = z.object({
   order: z.enum(["asc", "desc"]).default("desc"),
 });
 
-type InsightPayload = {
+export type InsightPayload = {
   summary: string;
   topSpendingCategories: Array<{ category: string; amount: number; reason: string }>;
   anomalies: Array<{
@@ -39,312 +37,118 @@ type InsightPayload = {
   openaiError?: string;
 };
 
-type RedactionCounts = {
-  email: number;
-  phone: number;
-  nric: number;
-  longNumber: number;
-};
-
-type RedactionResult = {
-  text: string;
-  counts: RedactionCounts;
-};
-
-type PromptBuildResult = {
-  promptParams: {
-    dataset: {
-      id: string;
-      name: string;
-      status: string;
-      rowCount: number;
-      originalFilename: string | null;
-      createdAt: string;
-    };
-    transactions: Array<{
-      date: string;
-      description: string;
-      category: string;
-      amount: string;
-    }>;
-    instruction: string;
-  };
-  transactionsIncluded: number;
-  totalCharsSent: number;
-  redactionCounts: RedactionCounts;
-};
+// Schema for what we ask the LLM to return — narrative text only, no numbers
+const llmNarrativeSchema = z.object({
+  summary: z.string().min(1),
+  categoryReasons: z.array(z.string()).default([]),
+  anomalyReasons: z.array(z.string()).default([]),
+  recommendations: z
+    .array(z.string().min(1))
+    .min(3)
+    .transform((arr): [string, string, string] => [arr[0], arr[1], arr[2]]),
+});
 
 const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 const PHONE_REGEX = /(?:\+?\d[\d\s().-]{7,}\d)/g;
 const NRIC_REGEX = /\b[STFG]\d{7}[A-Z]\b/gi;
 const LONG_DIGIT_REGEX = /\b\d{9,}\b/g;
 
-const insightPayloadSchema = z.object({
-  summary: z.string().min(1),
-  topSpendingCategories: z
-    .array(
-      z.object({
-        category: z.string().min(1),
-        amount: z.number().finite(),
-        reason: z.string().min(1),
-      }),
-    )
-    .default([]),
-  anomalies: z
-    .array(
-      z.object({
-        date: z.string().min(1),
-        description: z.string().min(1),
-        category: z.string().min(1),
-        amount: z.number().finite(),
-        reason: z.string().min(1),
-      }),
-    )
-    .default([]),
-  recommendations: z
-    .array(z.string().min(1))
-    .min(3)
-    .transform((arr) => [arr[0], arr[1], arr[2]] as [string, string, string]),
-});
+function redactPii(value: string): string {
+  return value
+    .replace(NRIC_REGEX, "[REDACTED]")
+    .replace(EMAIL_REGEX, "[REDACTED]")
+    .replace(PHONE_REGEX, "[REDACTED]")
+    .replace(LONG_DIGIT_REGEX, "[REDACTED]");
+}
 
-const normalizeRecommendations = (recommendations: string[]): [string, string, string] => {
-  const defaults = [
-    "Set a monthly budget cap for your highest spending category.",
-    "Review high-value transactions and tag expected one-off expenses.",
-    "Track category trends weekly to catch overspending early.",
-  ];
-  const merged = [...recommendations.filter((r) => r.trim().length > 0), ...defaults];
-  return [merged[0], merged[1], merged[2]];
-};
+function defaultCategoryReason(cat: CategoryStat): string {
+  return `${cat.category} totalled ${cat.total.toFixed(2)} across ${cat.count} transaction${cat.count !== 1 ? "s" : ""}.`;
+}
 
-const toShortSummary = (summary: string): string => {
-  const clean = summary.replace(/\s+/g, " ").trim();
-  if (clean.length <= 280) {
-    return clean;
-  }
-  return `${clean.slice(0, 277)}...`;
-};
+function defaultAnomalyReason(a: AnomalyStat): string {
+  return `This transaction is ${a.zScore.toFixed(1)} standard deviations above your average spend.`;
+}
 
-const truncateDescription = (value: string): string => {
-  if (value.length <= MAX_DESCRIPTION_LENGTH) {
-    return value;
-  }
-  return `${value.slice(0, MAX_DESCRIPTION_LENGTH - 3)}...`;
-};
-
-const redactPattern = (
-  input: string,
-  pattern: RegExp,
-  replacement: string,
-): { text: string; count: number } => {
-  let count = 0;
-  const text = input.replace(pattern, () => {
-    count += 1;
-    return replacement;
-  });
-  return { text, count };
-};
-
-const redactPiiText = (value: string): RedactionResult => {
-  const counts: RedactionCounts = {
-    email: 0,
-    phone: 0,
-    nric: 0,
-    longNumber: 0,
-  };
-
-  let text = value;
-
-  const nric = redactPattern(text, NRIC_REGEX, "[REDACTED_NRIC]");
-  text = nric.text;
-  counts.nric += nric.count;
-
-  const email = redactPattern(text, EMAIL_REGEX, "[REDACTED_EMAIL]");
-  text = email.text;
-  counts.email += email.count;
-
-  const phone = redactPattern(text, PHONE_REGEX, "[REDACTED_PHONE]");
-  text = phone.text;
-  counts.phone += phone.count;
-
-  const longNumber = redactPattern(text, LONG_DIGIT_REGEX, "[REDACTED_NUMBER]");
-  text = longNumber.text;
-  counts.longNumber += longNumber.count;
-
-  return { text, counts };
-};
-
-const mergeCounts = (target: RedactionCounts, source: RedactionCounts): void => {
-  target.email += source.email;
-  target.phone += source.phone;
-  target.nric += source.nric;
-  target.longNumber += source.longNumber;
-};
-
-const getUtcDayWindow = (): { start: Date; end: Date } => {
-  const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  return { start, end };
-};
-
-const createInsightCacheKey = (
-  datasetId: string,
-  model: string,
-  promptParams: unknown,
-): string => {
-  return createHash("sha256")
-    .update(JSON.stringify({ datasetId, model, promptParams }))
-    .digest("hex");
-};
-
-const buildPromptParams = (
-  dataset: {
-    id: string;
-    name: string;
-    status: string;
-    rowCount: number;
-    originalFilename: string | null;
-    createdAt: Date;
-  },
-  transactions: Array<{ date: Date; description: string; category: string; amount: { toString: () => string } }>,
-  promptInstruction: string,
-): PromptBuildResult => {
-  const redactionCounts: RedactionCounts = {
-    email: 0,
-    phone: 0,
-    nric: 0,
-    longNumber: 0,
-  };
-
-  const datasetName = redactPiiText(dataset.name);
-  mergeCounts(redactionCounts, datasetName.counts);
-
-  const originalFilename = dataset.originalFilename
-    ? redactPiiText(dataset.originalFilename)
-    : null;
-  if (originalFilename) {
-    mergeCounts(redactionCounts, originalFilename.counts);
-  }
-
-  const promptDataset = {
-    id: dataset.id,
-    name: datasetName.text,
-    status: dataset.status,
-    rowCount: dataset.rowCount,
-    originalFilename: originalFilename?.text ?? null,
-    createdAt: dataset.createdAt.toISOString(),
-  };
-
-  const promptTransactions: Array<{
-    date: string;
-    description: string;
-    category: string;
-    amount: string;
-  }> = [];
-
-  const baseChars = JSON.stringify({
-    dataset: promptDataset,
-    transactions: [],
-    instruction: promptInstruction,
-  }).length;
-  let totalChars = baseChars;
-
-  for (const tx of transactions) {
-    if (promptTransactions.length >= MAX_OPENAI_TRANSACTIONS) {
-      break;
-    }
-
-    const redactedDescription = redactPiiText(truncateDescription(tx.description));
-    const redactedCategory = redactPiiText(tx.category);
-    mergeCounts(redactionCounts, redactedDescription.counts);
-    mergeCounts(redactionCounts, redactedCategory.counts);
-
-    const txEntry = {
-      date: tx.date.toISOString(),
-      description: redactedDescription.text,
-      category: redactedCategory.text,
-      amount: tx.amount.toString(),
-    };
-
-    const txChars = JSON.stringify(txEntry).length;
-    if (totalChars + txChars > MAX_OPENAI_CHARS) {
-      break;
-    }
-
-    promptTransactions.push(txEntry);
-    totalChars += txChars;
-  }
-
-  return {
-    promptParams: {
-      dataset: promptDataset,
-      transactions: promptTransactions,
-      instruction: promptInstruction,
-    },
-    transactionsIncluded: promptTransactions.length,
-    totalCharsSent: totalChars,
-    redactionCounts,
-  };
-};
-
-const buildFallbackInsight = (
-  transactions: Array<{ date: Date; description: string; category: string; amount: { toString: () => string } }>,
+function buildFallbackInsight(
+  categories: CategoryStat[],
+  anomalies: AnomalyStat[],
+  totalExpenses: number,
+  transactionCount: number,
   openaiError?: string,
-): InsightPayload => {
-  const categoryTotals = new Map<string, number>();
-  const normalized = transactions.map((t) => {
-    const amount = Number(t.amount.toString());
-    categoryTotals.set(t.category, (categoryTotals.get(t.category) ?? 0) + amount);
-    return {
-      date: t.date.toISOString().slice(0, 10),
-      description: truncateDescription(t.description),
-      category: t.category,
-      amount,
-    };
-  });
-
-  const topSpendingCategories = [...categoryTotals.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([category, amount]) => ({
-      category,
-      amount: Number(amount.toFixed(2)),
-      reason: "Highest total spend based on uploaded transactions.",
-    }));
-
-  const avg = normalized.length
-    ? normalized.reduce((sum, t) => sum + t.amount, 0) / normalized.length
-    : 0;
-  const anomalies = normalized
-    .filter((t) => t.amount > avg * 2 && t.amount > 0)
-    .slice(0, 5)
-    .map((t) => ({
-      date: t.date,
-      description: t.description,
-      category: t.category,
-      amount: t.amount,
-      reason: "Amount is significantly above dataset average.",
-    }));
-
-  const summaryLines = [
-    `Processed ${normalized.length} transactions for analysis.`,
-    topSpendingCategories[0]
-      ? `Top category is ${topSpendingCategories[0].category} at ${topSpendingCategories[0].amount.toFixed(2)}.`
-      : "No category totals available.",
+): InsightPayload {
+  const top = categories[0];
+  const summaryParts = [
+    `Analysed ${transactionCount} transactions with total expenses of ${totalExpenses.toFixed(2)}.`,
+    top ? `Your highest spend category is ${top.category} at ${top.total.toFixed(2)}.` : "",
     anomalies.length > 0
-      ? `Detected ${anomalies.length} high-value transaction(s).`
-      : "No clear anomalies detected in this sample.",
-  ];
+      ? `Detected ${anomalies.length} high-value transaction${anomalies.length !== 1 ? "s" : ""}.`
+      : "No unusual transactions detected.",
+  ].filter(Boolean);
 
   return {
-    summary: toShortSummary(summaryLines.join(" ")),
-    topSpendingCategories,
-    anomalies,
-    recommendations: normalizeRecommendations([]),
+    summary: summaryParts.join(" "),
+    topSpendingCategories: categories.slice(0, 5).map((cat) => ({
+      category: cat.category,
+      amount: cat.total,
+      reason: defaultCategoryReason(cat),
+    })),
+    anomalies: anomalies.map((a) => ({
+      date: a.date,
+      description: a.description,
+      category: a.category,
+      amount: a.amount,
+      reason: defaultAnomalyReason(a),
+    })),
+    recommendations: [
+      top ? `Set a monthly budget cap for ${top.category} to manage your largest expense category.` : "Review your spending categories and set monthly limits.",
+      "Flag any high-value transactions you didn't expect to catch billing errors early.",
+      "Track your monthly net savings rate — aim for at least 20% of income.",
+    ],
     ...(openaiError ? { openaiError } : {}),
   };
-};
+}
+
+function buildGroundedPrompt(
+  datasetName: string,
+  categories: CategoryStat[],
+  anomalies: AnomalyStat[],
+  totalIncome: number,
+  totalExpenses: number,
+  netSavings: number,
+  savingsRate: number,
+  transactionCount: number,
+): string {
+  return JSON.stringify({
+    datasetName: redactPii(datasetName),
+    metrics: {
+      totalIncome,
+      totalExpenses,
+      netSavings,
+      savingsRate,
+      transactionCount,
+    },
+    topCategories: categories.slice(0, 5).map((c) => ({
+      category: redactPii(c.category),
+      total: c.total,
+      count: c.count,
+    })),
+    anomalies: anomalies.map((a) => ({
+      date: a.date,
+      description: redactPii(a.description),
+      category: redactPii(a.category),
+      amount: a.amount,
+      zScore: a.zScore,
+    })),
+    task: [
+      "Using ONLY the exact figures above (do not recalculate or estimate), write a financial analysis.",
+      "Return JSON with keys:",
+      "  summary: 2-3 sentence narrative using the exact figures.",
+      `  categoryReasons: array of ${Math.min(categories.length, 5)} short strings, one insight per category.`,
+      `  anomalyReasons: array of ${anomalies.length} short strings explaining why each transaction is notable.`,
+      "  recommendations: array of exactly 3 specific, actionable advice strings.",
+    ].join(" "),
+  });
+}
 
 const resolveAuthorizedDataset = async (
   req: Request,
@@ -366,43 +170,26 @@ const resolveAuthorizedDataset = async (
 > => {
   const user = await getUserFromRequest(req);
   if (!user) {
-    return {
-      error: errorResponseWithRequestId(
-        requestId,
-        401,
-        "UNAUTHORIZED",
-        "Missing or invalid token",
-      ),
-    };
+    return { error: errorResponseWithRequestId(requestId, 401, "UNAUTHORIZED", "Missing or invalid token") };
   }
 
   const parsedId = idSchema.safeParse(id);
   if (!parsedId.success) {
-    return {
-      error: errorResponseWithRequestId(requestId, 400, "VALIDATION_ERROR", "Invalid dataset id"),
-    };
+    return { error: errorResponseWithRequestId(requestId, 400, "VALIDATION_ERROR", "Invalid dataset id") };
   }
 
   const dataset = await prisma.dataset.findFirst({
     where: { id: parsedId.data, userId: user.id },
-    select: {
-      id: true,
-      name: true,
-      status: true,
-      rowCount: true,
-      originalFilename: true,
-      createdAt: true,
-    },
+    select: { id: true, name: true, status: true, rowCount: true, originalFilename: true, createdAt: true },
   });
 
   if (!dataset) {
-    return {
-      error: errorResponseWithRequestId(requestId, 404, "NOT_FOUND", "Dataset not found"),
-    };
+    return { error: errorResponseWithRequestId(requestId, 404, "NOT_FOUND", "Dataset not found") };
   }
 
   return { dataset, userId: user.id };
 };
+
 
 export async function GET(
   req: Request,
@@ -411,9 +198,7 @@ export async function GET(
   const requestId = getRequestId(req);
   const { id } = await params;
   const resolved = await resolveAuthorizedDataset(req, id, requestId);
-  if ("error" in resolved) {
-    return resolved.error;
-  }
+  if ("error" in resolved) return resolved.error;
 
   try {
     const searchParams = new URL(req.url).searchParams;
@@ -425,36 +210,19 @@ export async function GET(
     });
 
     if (!parsedQuery.success) {
-      return errorResponseWithRequestId(
-        requestId,
-        400,
-        "VALIDATION_ERROR",
-        parsedQuery.error.issues[0]?.message ?? "Invalid query params",
-      );
+      return errorResponseWithRequestId(requestId, 400, "VALIDATION_ERROR", parsedQuery.error.issues[0]?.message ?? "Invalid query params");
     }
 
     const { page, pageSize, sort, order } = parsedQuery.data;
     const where = { datasetId: resolved.dataset.id };
     const [total, insights] = await Promise.all([
       prisma.insight.count({ where }),
-      prisma.insight.findMany({
-        where,
-        orderBy: { [sort]: order },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
+      prisma.insight.findMany({ where, orderBy: { [sort]: order }, skip: (page - 1) * pageSize, take: pageSize }),
     ]);
-
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     return jsonWithRequestId(requestId, {
       data: insights,
-      meta: {
-        page,
-        pageSize,
-        total,
-        totalPages,
-      },
+      meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
     });
   } catch {
     return errorResponseWithRequestId(requestId, 500, "INTERNAL_SERVER_ERROR", "Something went wrong");
@@ -467,29 +235,21 @@ export async function POST(
 ): Promise<NextResponse> {
   const requestId = getRequestId(req);
   const csrfError = enforceCsrfIfCookieAuth(req, requestId);
-  if (csrfError) {
-    return csrfError;
-  }
+  if (csrfError) return csrfError;
+
   const { id } = await params;
   const resolved = await resolveAuthorizedDataset(req, id, requestId);
-  if ("error" in resolved) {
-    return resolved.error;
-  }
+  if ("error" in resolved) return resolved.error;
 
   const apiKey = env.OPENAI_API_KEY;
   if (!apiKey) {
-    return errorResponseWithRequestId(
-      requestId,
-      500,
-      "OPENAI_KEY_MISSING",
-      "OPENAI_API_KEY is not configured",
-    );
+    return errorResponseWithRequestId(requestId, 500, "OPENAI_KEY_MISSING", "OPENAI_API_KEY is not configured");
   }
-  const dataset = resolved.dataset;
-  const userId = resolved.userId;
+
+  const { dataset, userId } = resolved;
   const ip = getRequestIp(req);
   const requestMeta = getAuditRequestMeta(req);
-  const isOpenAiStubbed = process.env.NODE_ENV === "test" || apiKey === "test";
+  const isStubbed = process.env.NODE_ENV === "test" || apiKey === "test";
 
   const { allowed } = await rateLimitOrThrow({
     key: `datasets:insights:${dataset.id}:${userId}:${ip}`,
@@ -497,245 +257,154 @@ export async function POST(
     windowMs: 60 * 1000,
   });
   if (!allowed) {
+    return errorResponseWithRequestId(requestId, 429, "RATE_LIMITED", "Too many requests. Try again later.");
+  }
+
+  // Fetch ALL transactions — metrics must be computed from complete data
+  const transactions = await prisma.transaction.findMany({
+    where: { datasetId: dataset.id },
+    orderBy: { date: "desc" },
+    select: { date: true, description: true, category: true, amount: true },
+  });
+
+  // Compute exact metrics and anomalies deterministically from the database
+  const metrics = computeMetrics(transactions);
+  const anomalies = detectAnomalies(transactions);
+
+  const cacheKey = createHash("sha256")
+    .update(JSON.stringify({ datasetId: dataset.id, model: INSIGHTS_MODEL, metrics, anomalies }))
+    .digest("hex");
+
+  const cachedInsight = await prisma.insight.findFirst({
+    where: { datasetId: dataset.id, cacheKey, createdAt: { gte: new Date(Date.now() - INSIGHTS_CACHE_TTL_MS) } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (cachedInsight) {
+    return jsonWithRequestId(requestId, { data: cachedInsight });
+  }
+
+  const quota = await getInsightsQuota(userId);
+  if (quota.remaining <= 0) {
     return errorResponseWithRequestId(
-      requestId,
-      429,
-      "RATE_LIMITED",
-      "Too many requests. Try again later.",
+      requestId, 429, "QUOTA_EXCEEDED",
+      quota.isPro
+        ? "Daily insights quota exceeded. Resets at midnight UTC."
+        : `Free plan allows ${quota.limit} insights per month. Upgrade to Pro for 30/day.`,
     );
   }
 
-  try {
-    const transactions = await prisma.transaction.findMany({
-      where: { datasetId: dataset.id },
-      orderBy: { date: "desc" },
-      take: MAX_TRANSACTIONS,
-      select: {
-        date: true,
-        description: true,
-        category: true,
-        amount: true,
-      },
-    });
+  logger.info("INSIGHTS_GROUNDED_COMPUTE", {
+    requestId,
+    datasetId: dataset.id,
+    transactionCount: metrics.transactionCount,
+    anomalyCount: anomalies.length,
+    topCategories: metrics.topCategories.slice(0, 3).map((c) => c.category),
+  });
 
-    const promptInstruction =
-      "Return strict JSON with keys: summary (string), topSpendingCategories (array), anomalies (array), recommendations (array of exactly 3 strings).";
-    const promptBuild = buildPromptParams(dataset, transactions, promptInstruction);
-    const promptParams = promptBuild.promptParams;
-    const cacheKey = createInsightCacheKey(dataset.id, INSIGHTS_MODEL, promptParams);
-    const cachedInsight = await prisma.insight.findFirst({
-      where: {
-        datasetId: dataset.id,
-        cacheKey,
-        createdAt: {
-          gte: new Date(Date.now() - INSIGHTS_CACHE_TTL_MS),
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  let insightPayload: InsightPayload;
+  let model = INSIGHTS_MODEL;
 
-    if (cachedInsight) {
-      return jsonWithRequestId(requestId, { data: cachedInsight });
-    }
+  if (isStubbed) {
+    logger.info("OPENAI_STUBBED_IN_TEST", { requestId, datasetId: dataset.id });
+    insightPayload = buildFallbackInsight(metrics.topCategories, anomalies, metrics.totalExpenses, metrics.transactionCount);
+    model = "stub-test-v1";
+  } else {
+    const groundedPrompt = buildGroundedPrompt(
+      dataset.name,
+      metrics.topCategories,
+      anomalies,
+      metrics.totalIncome,
+      metrics.totalExpenses,
+      metrics.netSavings,
+      metrics.savingsRate,
+      metrics.transactionCount,
+    );
 
-    const { start, end } = getUtcDayWindow();
-    const insightsUsedToday = await prisma.auditLog.count({
-      where: {
-        userId,
-        action: "INSIGHTS_GENERATE",
-        createdAt: {
-          gte: start,
-          lt: end,
-        },
-      },
-    });
-
-    if (insightsUsedToday >= DAILY_INSIGHTS_QUOTA) {
-      return errorResponseWithRequestId(
-        requestId,
-        429,
-        "QUOTA_EXCEEDED",
-        "Daily insights quota exceeded",
-      );
-    }
-
-    const prompt = {
-      dataset: promptParams.dataset,
-      transactions: promptParams.transactions,
-      instruction: promptInstruction,
-    };
-
-    logger.info("INSIGHTS_PROMPT_STATS", {
-      requestId,
-      datasetId: dataset.id,
-      transactionsIncluded: promptBuild.transactionsIncluded,
-      totalCharsSent: promptBuild.totalCharsSent,
-      redactionCounts: promptBuild.redactionCounts,
-    });
-
-    let insightJson: InsightPayload;
-    let summary = "Generated insights";
-    let model = INSIGHTS_MODEL;
-
-    if (isOpenAiStubbed) {
-      logger.info("OPENAI_STUBBED_IN_TEST", { requestId, datasetId: dataset.id });
-      insightJson = buildFallbackInsight(transactions);
-      summary = insightJson.summary;
-      model = "stub-test-v1";
-    } else {
+    try {
       const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
           model: INSIGHTS_MODEL,
-          temperature: 0.2,
+          temperature: 0.3,
           response_format: { type: "json_object" },
           messages: [
             {
               role: "system",
               content:
-                "You are a finance analyst. Output valid JSON only with keys: summary, topSpendingCategories, anomalies, recommendations. recommendations must contain exactly 3 strings.",
+                "You are a personal finance analyst. You will receive pre-computed financial metrics. " +
+                "Your only job is to write clear, specific, actionable narrative text. " +
+                "Do NOT recalculate, estimate, or invent any numbers — use only the exact figures provided. " +
+                "Return valid JSON only.",
             },
-            {
-              role: "user",
-              content: JSON.stringify(prompt),
-            },
+            { role: "user", content: groundedPrompt },
           ],
         }),
       });
 
       if (!openaiRes.ok) {
         const errText = await openaiRes.text();
-        insightJson = buildFallbackInsight(transactions, errText || "OpenAI request failed");
-        summary = insightJson.summary;
+        logger.warn("OPENAI_REQUEST_FAILED", { requestId, status: openaiRes.status, errText });
+        insightPayload = buildFallbackInsight(metrics.topCategories, anomalies, metrics.totalExpenses, metrics.transactionCount, errText || "OpenAI request failed");
         model = "fallback-local-v1";
       } else {
-        const completion = (await openaiRes.json()) as {
-          choices?: Array<{ message?: { content?: string } }>;
-        };
+        const completion = (await openaiRes.json()) as { choices?: Array<{ message?: { content?: string } }> };
         const content = completion.choices?.[0]?.message?.content ?? "";
 
-        try {
-          const parsed = JSON.parse(content) as unknown;
-          const normalized = insightPayloadSchema.safeParse(parsed);
-          if (!normalized.success) {
-            insightJson = buildFallbackInsight(
-              transactions,
-              `OPENAI_INVALID_JSON: ${normalized.error.issues[0]?.message ?? "Invalid schema"}`,
-            );
-            model = "fallback-local-v1";
-          } else {
-            const data = normalized.data;
-            insightJson = {
-              summary: toShortSummary(data.summary),
-              topSpendingCategories: data.topSpendingCategories.map((c) => ({
-                category: c.category,
-                amount: Number(c.amount.toFixed(2)),
-                reason: c.reason,
-              })),
-              anomalies: data.anomalies.map((a) => ({
-                date: a.date,
-                description: truncateDescription(a.description),
-                category: a.category,
-                amount: Number(a.amount.toFixed(2)),
-                reason: a.reason,
-              })),
-              recommendations: normalizeRecommendations(data.recommendations),
-            };
-          }
-        } catch {
-          insightJson = buildFallbackInsight(transactions, "OPENAI_PARSE_ERROR: Failed to parse JSON response");
+        const parsed = llmNarrativeSchema.safeParse(JSON.parse(content));
+        if (!parsed.success) {
+          logger.warn("OPENAI_INVALID_SCHEMA", { requestId, issue: parsed.error.issues[0]?.message });
+          insightPayload = buildFallbackInsight(metrics.topCategories, anomalies, metrics.totalExpenses, metrics.transactionCount, "Invalid LLM response schema");
           model = "fallback-local-v1";
+        } else {
+          const narrative = parsed.data;
+          // Merge: numbers always from computation, text from LLM
+          insightPayload = {
+            summary: narrative.summary,
+            topSpendingCategories: metrics.topCategories.slice(0, 5).map((cat, i) => ({
+              category: cat.category,
+              amount: cat.total,
+              reason: narrative.categoryReasons[i] ?? defaultCategoryReason(cat),
+            })),
+            anomalies: anomalies.map((a, i) => ({
+              date: a.date,
+              description: a.description,
+              category: a.category,
+              amount: a.amount,
+              reason: narrative.anomalyReasons[i] ?? defaultAnomalyReason(a),
+            })),
+            recommendations: narrative.recommendations,
+          };
         }
-        summary = insightJson.summary;
       }
-    }
-
-    const savedInsight = await prisma.$transaction(async (tx) => {
-      const createdInsight = await tx.insight.create({
-        data: {
-          datasetId: dataset.id,
-          model,
-          cacheKey,
-          insightText: summary,
-          insightJson,
-        },
-      });
-
-      return createdInsight;
-    });
-
-    await logAudit({
-      userId,
-      action: "INSIGHTS_GENERATE",
-      entityType: "Dataset",
-      entityId: dataset.id,
-      meta: {
-        insightId: savedInsight.id,
-        model,
-        ...requestMeta,
-      },
-    });
-
-    return jsonWithRequestId(requestId, { data: savedInsight });
-  } catch {
-    try {
-      const transactions = await prisma.transaction.findMany({
-        where: { datasetId: dataset.id },
-        orderBy: { date: "desc" },
-        take: MAX_TRANSACTIONS,
-        select: {
-          date: true,
-          description: true,
-          category: true,
-          amount: true,
-        },
-      });
-      const insightJson = buildFallbackInsight(transactions, "OPENAI_REQUEST_ERROR: Network or runtime failure");
-      const fallbackPromptInstruction =
-        "Return strict JSON with keys: summary (string), topSpendingCategories (array), anomalies (array), recommendations (array of exactly 3 strings).";
-      const fallbackPromptBuild = buildPromptParams(
-        dataset,
-        transactions,
-        fallbackPromptInstruction,
-      );
-      const fallbackPromptParams = fallbackPromptBuild.promptParams;
-      const fallbackCacheKey = createInsightCacheKey(
-        dataset.id,
-        "fallback-local-v1",
-        fallbackPromptParams,
-      );
-      const savedInsight = await prisma.$transaction(async (tx) => {
-        const createdInsight = await tx.insight.create({
-          data: {
-            datasetId: dataset.id,
-            model: "fallback-local-v1",
-            cacheKey: fallbackCacheKey,
-            insightText: insightJson.summary,
-            insightJson,
-          },
-        });
-
-        return createdInsight;
-      });
-
-      await logAudit({
-        userId,
-        action: "INSIGHTS_GENERATE",
-        entityType: "Dataset",
-        entityId: dataset.id,
-        meta: {
-          insightId: savedInsight.id,
-          model: "fallback-local-v1",
-          ...requestMeta,
-        },
-      });
-      return jsonWithRequestId(requestId, { data: savedInsight });
-    } catch {
-      return errorResponseWithRequestId(requestId, 500, "INTERNAL_SERVER_ERROR", "Something went wrong");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      logger.error("OPENAI_UNEXPECTED_ERROR", { requestId, msg });
+      insightPayload = buildFallbackInsight(metrics.topCategories, anomalies, metrics.totalExpenses, metrics.transactionCount, msg);
+      model = "fallback-local-v1";
     }
   }
+
+  const savedInsight = await prisma.$transaction(async (tx) => {
+    return tx.insight.create({
+      data: {
+        datasetId: dataset.id,
+        model,
+        cacheKey,
+        insightText: insightPayload.summary,
+        insightJson: insightPayload,
+      },
+    });
+  });
+
+  await logAudit({
+    userId,
+    action: "INSIGHTS_GENERATE",
+    entityType: "Dataset",
+    entityId: dataset.id,
+    meta: { insightId: savedInsight.id, model, ...requestMeta },
+  });
+
+  return jsonWithRequestId(requestId, { data: savedInsight });
 }

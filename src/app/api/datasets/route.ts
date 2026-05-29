@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/auth";
 import { enforceCsrfIfCookieAuth } from "@/lib/csrf";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
+import { getUserSubscription, FREE_DATASET_LIMIT } from "@/lib/subscription";
 const createDatasetSchema = z.object({
   name: z.string().trim().min(1, "Dataset name is required").max(120),
 });
@@ -52,6 +53,20 @@ export async function POST(req: Request): Promise<NextResponse> {
         "VALIDATION_ERROR",
         parsed.error.issues[0]?.message ?? "Invalid input",
       );
+    }
+
+    // Enforce free-tier dataset limit
+    const { isPro } = await getUserSubscription(user.id);
+    if (!isPro) {
+      const count = await prisma.dataset.count({ where: { userId: user.id } });
+      if (count >= FREE_DATASET_LIMIT) {
+        return errorResponseWithRequestId(
+          requestId,
+          403,
+          "UPGRADE_REQUIRED",
+          `Free plan is limited to ${FREE_DATASET_LIMIT} datasets. Upgrade to Pro for unlimited datasets.`,
+        );
+      }
     }
 
     const dataset = await prisma.dataset.create({
