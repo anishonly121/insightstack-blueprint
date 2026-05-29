@@ -149,7 +149,15 @@ export async function DELETE(req: Request): Promise<NextResponse> {
     await prisma.user.delete({ where: { id: user.id } });
 
     const response = jsonWithRequestId(requestId, { data: { ok: true } });
-    response.cookies.set(AUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+    response.cookies.set({
+      name: AUTH_COOKIE_NAME,
+      value: "",
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 0,
+    });
     return response;
   } catch (err) {
     logger.error("DELETE_ACCOUNT_ERROR", { errorName: err instanceof Error ? err.name : "UnknownError" });
