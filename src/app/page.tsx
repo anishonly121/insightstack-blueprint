@@ -458,7 +458,7 @@ const pricingPlans = [
     cta: "Get started free", href: "/register", hot: false,
   },
   {
-    name: "Pro", price: "$49", period: "/month", tagline: "For professionals who need full power.",
+    name: "Pro", price: "$9", period: "/month", tagline: "For professionals who need full power.",
     features: ["Unlimited datasets", "Unlimited AI insights", "Advanced anomaly detection", "Priority CSV processing", "PDF & Excel export", "Priority support", "API access (beta)"],
     cta: "Start 14-day free trial", href: "/register", hot: true,
   },
