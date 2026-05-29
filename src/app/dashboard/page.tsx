@@ -352,31 +352,24 @@ export default function DashboardPage() {
                 Admin Panel
               </Link>
             )}
-            <Link
-              href="/dashboard/compare"
-              className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white"
-            >
-              Compare
-            </Link>
-            <Link
-              href="/dashboard/activity"
-              className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white"
-            >
-              Activity
-            </Link>
-            <Link
-              href="/dashboard/settings"
-              className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white"
-            >
-              Settings
-            </Link>
-            <button
-              type="button"
-              onClick={() => void onLogout()}
-              className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white"
-            >
-              Logout
-            </button>
+            <Link href="/dashboard/compare" className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Compare</Link>
+            <Link href="/dashboard/activity" className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Activity</Link>
+            <Link href="/dashboard/settings" className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Settings</Link>
+            {quota && !quota.isPro && (
+              <button
+                type="button"
+                disabled={upgradeLoading}
+                onClick={async () => {
+                  setUpgradeLoading(true);
+                  try { const res = await api.createCheckoutSession(); window.location.href = res.data.url; }
+                  catch { setUpgradeLoading(false); }
+                }}
+                className="rounded-lg bg-blue-500 px-3 py-2 text-sm font-black text-white shadow-[0_0_16px_rgba(59,130,246,0.4)] transition hover:bg-blue-400 hover:shadow-[0_0_24px_rgba(59,130,246,0.55)] disabled:opacity-50"
+              >
+                {upgradeLoading ? "…" : "✦ Try Pro"}
+              </button>
+            )}
+            <button type="button" onClick={() => void onLogout()} className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Logout</button>
           </div>
         </header>
 
@@ -449,29 +442,38 @@ export default function DashboardPage() {
           <OnboardingChecklist datasets={datasets} totalDatasets={meta.total} />
         )}
 
-        {/* Upgrade banner — shows when free user is near limits */}
-        {quota && !quota.isPro && (quota.remaining <= 1 || (quota.datasetLimit !== null && quota.datasetCount >= quota.datasetLimit)) && (
-          <div className="mb-6 rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-500/8 to-transparent p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold text-white">
-                  {quota.remaining <= 0 ? "You've used all your free insights this month" : quota.datasetCount >= (quota.datasetLimit ?? 3) ? "You've reached the free dataset limit" : `${quota.remaining} free insight${quota.remaining === 1 ? "" : "s"} remaining this month`}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  Upgrade to Pro for 30 insights/day, unlimited datasets, and a 14-day free trial.
-                </p>
+        {/* Quota / upgrade strip — always visible for free users */}
+        {quota && !quota.isPro && (
+          <div className="mb-6 rounded-xl border border-white/6 bg-zinc-900 px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-zinc-400">
+                    AI Insights — {quota.insightsUsed} / {quota.insightsLimit} used {quota.insightsPeriod}
+                  </span>
+                  <span className="text-xs text-zinc-600">
+                    {quota.datasetCount} / {quota.datasetLimit ?? 3} datasets
+                  </span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${quota.remaining === 0 ? "bg-red-500" : quota.remaining <= 1 ? "bg-amber-500" : "bg-blue-500"}`}
+                    style={{ width: `${Math.min(100, (quota.insightsUsed / quota.insightsLimit) * 100)}%` }}
+                  />
+                </div>
+                {quota.remaining === 0 && (
+                  <p className="mt-1.5 text-xs text-red-400">You&apos;ve used all free insights this month.</p>
+                )}
               </div>
               <button
                 type="button"
                 disabled={upgradeLoading}
                 onClick={async () => {
                   setUpgradeLoading(true);
-                  try {
-                    const res = await api.createCheckoutSession();
-                    window.location.href = res.data.url;
-                  } catch { setUpgradeLoading(false); }
+                  try { const res = await api.createCheckoutSession(); window.location.href = res.data.url; }
+                  catch { setUpgradeLoading(false); }
                 }}
-                className="shrink-0 rounded-xl bg-blue-500 px-4 py-2 text-sm font-black text-white shadow-[0_0_15px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 disabled:opacity-50"
+                className="shrink-0 rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-black text-white shadow-[0_0_16px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 hover:shadow-[0_0_24px_rgba(59,130,246,0.5)] disabled:opacity-50"
               >
                 {upgradeLoading ? "Opening…" : "Upgrade to Pro — $9/mo →"}
               </button>
