@@ -1,16 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/auth";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
-
-const DAILY_INSIGHTS_QUOTA = 30;
-
-function getUtcDayWindow() {
-  const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  return { start, end };
-}
+import { getInsightsQuota, FREE_DATASET_LIMIT, getUserSubscription } from "@/lib/subscription";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request): Promise<NextResponse> {
   const requestId = getRequestId(req);
@@ -20,20 +12,27 @@ export async function GET(req: Request): Promise<NextResponse> {
       return errorResponseWithRequestId(requestId, 401, "UNAUTHORIZED", "Not authenticated");
     }
 
-    const { start, end } = getUtcDayWindow();
-    const insightsToday = await prisma.auditLog.count({
-      where: {
-        userId: user.id,
-        action: "INSIGHTS_GENERATE",
-        createdAt: { gte: start, lt: end },
-      },
-    });
+    const [quota, sub, datasetCount] = await Promise.all([
+      getInsightsQuota(user.id),
+      getUserSubscription(user.id),
+      prisma.dataset.count({ where: { userId: user.id } }),
+    ]);
 
     return jsonWithRequestId(requestId, {
       data: {
-        insightsToday,
-        quota: DAILY_INSIGHTS_QUOTA,
-        remaining: Math.max(0, DAILY_INSIGHTS_QUOTA - insightsToday),
+        isPro: sub.isPro,
+        tier: sub.isPro ? "pro" : "free",
+        insightsUsed: quota.used,
+        insightsLimit: quota.limit,
+        insightsPeriod: quota.periodLabel,
+        remaining: quota.remaining,
+        // Legacy field — kept so existing UI doesn't break
+        insightsToday: quota.used,
+        quota: quota.limit,
+        datasetCount,
+        datasetLimit: sub.isPro ? null : FREE_DATASET_LIMIT,
+        stripeSubscriptionStatus: sub.stripeSubscriptionStatus,
+        stripeCurrentPeriodEnd: sub.stripeCurrentPeriodEnd?.toISOString() ?? null,
       },
     });
   } catch {

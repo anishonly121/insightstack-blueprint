@@ -28,6 +28,92 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   FAILED:   { label: "Failed",   className: "bg-red-500/10 text-red-400 ring-1 ring-red-500/20" },
 };
 
+// ── Onboarding checklist ────────────────────────────────────────────────────
+function OnboardingChecklist({ datasets, totalDatasets }: { datasets: Dataset[]; totalDatasets: number }) {
+  const [dismissed, setDismissed] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("insightstack_onboarding_v1") === "done",
+  );
+  const [budgetsDone, setBudgetsDone] = useState(false);
+  const [insightsDone, setInsightsDone] = useState(false);
+
+  const firstParsed = datasets.find((d) => d.status === "PARSED");
+
+  useEffect(() => {
+    api.listBudgets().then((r) => setBudgetsDone(r.data.length > 0)).catch(() => {});
+    if (firstParsed) {
+      api.listInsights(firstParsed.id, { pageSize: 1 }).then((r) => setInsightsDone(r.meta.total > 0)).catch(() => {});
+    }
+  }, [firstParsed]);
+
+  const hasDataset = totalDatasets > 0;
+  const hasUploaded = !!firstParsed;
+
+  const steps = [
+    { label: "Create your account",      done: true,          href: null },
+    { label: "Create your first dataset", done: hasDataset,    href: null },
+    { label: "Upload a CSV file",         done: hasUploaded,   href: firstParsed ? `/dashboard/datasets/${firstParsed.id}` : null },
+    { label: "Generate AI insights",      done: insightsDone,  href: firstParsed ? `/dashboard/datasets/${firstParsed.id}` : null },
+    { label: "Set a spending budget",     done: budgetsDone,   href: firstParsed ? `/dashboard/datasets/${firstParsed.id}` : null },
+  ];
+
+  const completedCount = steps.filter((s) => s.done).length;
+  const allDone = completedCount === steps.length;
+
+  const dismiss = () => {
+    localStorage.setItem("insightstack_onboarding_v1", "done");
+    setDismissed(true);
+  };
+
+  if (dismissed || allDone) return null;
+
+  return (
+    <section className="mb-6 rounded-xl border border-blue-500/15 bg-blue-500/5 p-5">
+      <div className="mb-3 flex items-start justify-between">
+        <div>
+          <h2 className="text-sm font-bold text-white">Get started with InsightStack</h2>
+          <p className="mt-0.5 text-xs text-zinc-500">{completedCount} of {steps.length} steps complete</p>
+        </div>
+        <button type="button" onClick={dismiss} className="text-zinc-700 transition hover:text-zinc-400" aria-label="Dismiss">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+        <div
+          className="h-full rounded-full bg-blue-500 transition-all duration-700"
+          style={{ width: `${(completedCount / steps.length) * 100}%` }}
+        />
+      </div>
+
+      <div className="space-y-2.5">
+        {steps.map((step, i) => (
+          <div key={i} className="flex items-center gap-3">
+            {step.done ? (
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500">
+                <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+            ) : (
+              <div className="h-5 w-5 shrink-0 rounded-full border-2 border-zinc-700" />
+            )}
+            <span className={`text-sm ${step.done ? "text-zinc-600 line-through" : "text-zinc-200"}`}>
+              {step.label}
+            </span>
+            {!step.done && step.href && (
+              <Link href={step.href} className="ml-auto shrink-0 text-xs font-semibold text-blue-400 transition hover:text-blue-300">
+                Go →
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
@@ -108,7 +194,15 @@ export default function DashboardPage() {
   const [fileByDataset, setFileByDataset] = useState<Record<string, File | null>>({});
   const [actions, setActions] = useState<Record<string, ActionState>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [quota, setQuota] = useState<import("@/lib/api").QuotaInfo | null>(null);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const [showUpgradedBanner, setShowUpgradedBanner] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const show = new URLSearchParams(window.location.search).get("upgraded") === "1";
+    if (show) window.history.replaceState({}, "", window.location.pathname);
+    return show;
+  });
 
   const hasDatasets = useMemo(() => datasets.length > 0, [datasets.length]);
 
@@ -140,6 +234,7 @@ export default function DashboardPage() {
     void (async () => {
       try { const meRes = await api.me(); setUser(meRes.user); } catch {}
       await loadDatasets(1);
+      api.quota().then((r) => setQuota(r.data)).catch(() => {});
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
@@ -258,6 +353,12 @@ export default function DashboardPage() {
               </Link>
             )}
             <Link
+              href="/dashboard/compare"
+              className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white"
+            >
+              Compare
+            </Link>
+            <Link
               href="/dashboard/activity"
               className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white"
             >
@@ -278,6 +379,29 @@ export default function DashboardPage() {
             </button>
           </div>
         </header>
+
+        {/* ── Upgrade success banner ─────────────────────────────────────── */}
+        {showUpgradedBanner && (
+          <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-emerald-300">{"You're now on Pro!"}</p>
+                <p className="text-xs text-emerald-600">30 AI insights/day, unlimited datasets, and all features unlocked. Enjoy.</p>
+              </div>
+            </div>
+            <button type="button" onClick={() => setShowUpgradedBanner(false)}
+              className="shrink-0 text-emerald-700 transition hover:text-emerald-400">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* ── Stats ──────────────────────────────────────────────────────── */}
         {!pageLoading && (
@@ -320,6 +444,40 @@ export default function DashboardPage() {
             </button>
           </form>
         </section>
+
+        {!pageLoading && (
+          <OnboardingChecklist datasets={datasets} totalDatasets={meta.total} />
+        )}
+
+        {/* Upgrade banner — shows when free user is near limits */}
+        {quota && !quota.isPro && (quota.remaining <= 1 || (quota.datasetLimit !== null && quota.datasetCount >= quota.datasetLimit)) && (
+          <div className="mb-6 rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-500/8 to-transparent p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-white">
+                  {quota.remaining <= 0 ? "You've used all your free insights this month" : quota.datasetCount >= (quota.datasetLimit ?? 3) ? "You've reached the free dataset limit" : `${quota.remaining} free insight${quota.remaining === 1 ? "" : "s"} remaining this month`}
+                </p>
+                <p className="text-xs text-zinc-500">
+                  Upgrade to Pro for 30 insights/day, unlimited datasets, and a 14-day free trial.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={upgradeLoading}
+                onClick={async () => {
+                  setUpgradeLoading(true);
+                  try {
+                    const res = await api.createCheckoutSession();
+                    window.location.href = res.data.url;
+                  } catch { setUpgradeLoading(false); }
+                }}
+                className="shrink-0 rounded-xl bg-blue-500 px-4 py-2 text-sm font-black text-white shadow-[0_0_15px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 disabled:opacity-50"
+              >
+                {upgradeLoading ? "Opening…" : "Upgrade to Pro — $9/mo →"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {pageError && (
           <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">

@@ -10,6 +10,7 @@ export type AuthUser = {
   name: string;
   email: string;
   role: string;
+  emailDigestEnabled?: boolean;
 };
 
 export type Dataset = {
@@ -47,6 +48,7 @@ export type Insight = {
   model: string;
   insightText: string;
   insightJson: InsightJson | null;
+  shared?: boolean;
 };
 
 export type Transaction = {
@@ -67,9 +69,19 @@ export type AuditActivity = {
 };
 
 export type QuotaInfo = {
+  isPro: boolean;
+  tier: "free" | "pro";
+  insightsUsed: number;
+  insightsLimit: number;
+  insightsPeriod: string;
+  remaining: number;
+  // legacy fields
   insightsToday: number;
   quota: number;
-  remaining: number;
+  datasetCount: number;
+  datasetLimit: number | null;
+  stripeSubscriptionStatus: string | null;
+  stripeCurrentPeriodEnd: string | null;
 };
 
 export type DatasetDetail = Dataset & {
@@ -107,6 +119,13 @@ export type MetricSnapshot = {
   computedAt: string;
   metricsJson: MetricsJson;
   cached: boolean;
+};
+
+export type Budget = {
+  id: string;
+  category: string;
+  monthlyLimit: number;
+  updatedAt: string;
 };
 
 const TOKEN_KEY = "insightstack_token";
@@ -339,4 +358,43 @@ export const api = {
 
   recentActivity: () =>
     request<{ data: AuditActivity[] }>("/api/activity"),
+
+  listBudgets: () =>
+    request<{ data: Budget[] }>("/api/budgets"),
+
+  upsertBudget: (category: string, monthlyLimit: number) =>
+    request<{ data: Budget }>("/api/budgets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, monthlyLimit }),
+    }),
+
+  deleteBudget: (category: string) =>
+    request<{ data: { ok: boolean } }>("/api/budgets", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category }),
+    }),
+
+  toggleShare: (datasetId: string, insightId: string) =>
+    request<{ data: { shared: boolean; url: string | null } }>(
+      `/api/datasets/${datasetId}/insights/${insightId}/share`,
+      { method: "POST" },
+    ),
+
+  getNotifications: () =>
+    request<{ data: { emailDigestEnabled: boolean } }>("/api/auth/me/notifications"),
+
+  updateNotifications: (data: { emailDigestEnabled: boolean }) =>
+    request<{ data: { emailDigestEnabled: boolean } }>("/api/auth/me/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+
+  createCheckoutSession: () =>
+    request<{ data: { url: string } }>("/api/stripe/checkout", { method: "POST" }),
+
+  createPortalSession: () =>
+    request<{ data: { url: string } }>("/api/stripe/portal", { method: "POST" }),
 };

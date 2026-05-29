@@ -17,12 +17,36 @@ export async function GET(req: Request): Promise<NextResponse> {
     }
 
     const user = await getUserFromRequest(req);
-
     if (!user) {
       return errorResponseWithRequestId(requestId, 401, "UNAUTHORIZED", "Missing or invalid token");
     }
 
-    return jsonWithRequestId(requestId, { token, user });
+    // Fetch extra profile fields not stored in the JWT
+    const profile = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        emailDigestEnabled: true,
+        stripeSubscriptionStatus: true,
+        stripeCurrentPeriodEnd: true,
+      },
+    });
+
+    const now = new Date();
+    const isPro =
+      (profile?.stripeSubscriptionStatus === "active" ||
+        profile?.stripeSubscriptionStatus === "trialing") &&
+      (!profile?.stripeCurrentPeriodEnd || profile.stripeCurrentPeriodEnd > now);
+
+    return jsonWithRequestId(requestId, {
+      token,
+      user: {
+        ...user,
+        emailDigestEnabled: profile?.emailDigestEnabled ?? true,
+        isPro,
+        stripeSubscriptionStatus: profile?.stripeSubscriptionStatus ?? null,
+        stripeCurrentPeriodEnd: profile?.stripeCurrentPeriodEnd?.toISOString() ?? null,
+      },
+    });
   } catch {
     return errorResponseWithRequestId(requestId, 500, "INTERNAL_SERVER_ERROR", "Something went wrong");
   }

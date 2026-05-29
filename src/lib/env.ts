@@ -18,6 +18,9 @@ const envSchema = z.object({
   SENDGRID_TEMPLATE_RESET_PASSWORD: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   SENDGRID_TEMPLATE_ALERT: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   SENDGRID_PASSWORD_RESET_TEMPLATE_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  STRIPE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  STRIPE_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  STRIPE_PRO_PRICE_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
 });
 
 const parsed = envSchema.safeParse(process.env);
