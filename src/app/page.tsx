@@ -453,17 +453,26 @@ function ActivityStrip() {
 
 const pricingPlans = [
   {
-    name: "Starter", price: "Free", period: "", tagline: "For individuals and side projects.",
+    name: "Starter",
+    price: "Free", annualPrice: "Free",
+    period: "", annualNote: "",
+    tagline: "For individuals and side projects.",
     features: ["3 datasets", "CSV upload & parsing", "Core analytics dashboard", "5 AI insight reports / month", "Email support"],
     cta: "Get started free", href: "/register", hot: false,
   },
   {
-    name: "Pro", price: "$9", period: "/month", tagline: "For professionals who need full power.",
+    name: "Pro",
+    price: "$9", annualPrice: "$7",
+    period: "/month", annualNote: "/mo · billed $84/yr",
+    tagline: "For professionals who need full power.",
     features: ["Unlimited datasets", "Unlimited AI insights", "Advanced anomaly detection", "Priority CSV processing", "PDF & Excel export", "Priority support", "API access (beta)"],
     cta: "Start 14-day free trial", href: "/register", hot: true,
   },
   {
-    name: "Enterprise", price: "Custom", period: "", tagline: "For teams with compliance requirements.",
+    name: "Enterprise",
+    price: "Custom", annualPrice: "Custom",
+    period: "", annualNote: "",
+    tagline: "For teams with compliance requirements.",
     features: ["Everything in Pro", "Team collaboration", "SSO / SAML auth", "Dedicated infrastructure", "Custom data retention", "SLA guarantee", "White-label option"],
     cta: "Talk to sales →", href: "mailto:bholeanish3@gmail.com", hot: false,
   },
@@ -526,6 +535,66 @@ const faqs = [
   },
 ];
 
+// ── Sample CSV download ────────────────────────────────────────────────────────
+const SAMPLE_CSV = `date,description,category,amount
+2026-01-02,Amazon Web Services,Cloud Hosting,-892.00
+2026-01-04,Stripe Revenue — Week 1,Income,4200.00
+2026-01-05,Netflix Business,Subscriptions,-15.99
+2026-01-07,Slack Pro,Software Tools,-87.50
+2026-01-08,Figma Professional,Software Tools,-45.00
+2026-01-09,Vercel Pro,Cloud Hosting,-20.00
+2026-01-10,Google Workspace,Software Tools,-12.00
+2026-01-12,Freelance Project — Acme Corp,Income,3500.00
+2026-01-14,GitHub Teams,Software Tools,-21.00
+2026-01-15,Amazon Web Services — Anomaly Spike,Cloud Hosting,-1247.00
+2026-01-16,Zoom Business,Software Tools,-15.99
+2026-01-17,DigitalOcean Droplets,Cloud Hosting,-72.00
+2026-01-20,Stripe Revenue — Week 3,Income,3800.00
+2026-01-22,QuickBooks Online,Accounting,-30.00
+2026-01-24,Notion Team Plan,Software Tools,-16.00
+2026-01-25,Payroll — Engineering Team,Payroll,-8500.00
+2026-01-27,Office Supplies,Office,-234.00
+2026-01-28,Stripe Revenue — Week 4,Income,5100.00
+2026-01-30,Adobe Creative Cloud,Software Tools,-54.99
+2026-02-01,Amazon Web Services,Cloud Hosting,-234.00
+2026-02-03,Netflix Business,Subscriptions,-15.99
+2026-02-05,Stripe Revenue — Week 1,Income,4600.00
+2026-02-06,Slack Pro,Software Tools,-87.50
+2026-02-08,Figma Professional,Software Tools,-45.00
+2026-02-10,Vercel Pro,Cloud Hosting,-20.00
+2026-02-12,Freelance Project — Beta Corp,Income,2800.00
+2026-02-14,GitHub Teams,Software Tools,-21.00
+2026-02-16,Zoom Business,Software Tools,-15.99
+2026-02-18,DigitalOcean Droplets,Cloud Hosting,-72.00
+2026-02-20,Stripe Revenue — Week 3,Income,4100.00
+2026-02-22,QuickBooks Online,Accounting,-30.00
+2026-02-25,Payroll — Engineering Team,Payroll,-8500.00
+2026-02-28,Adobe Creative Cloud,Software Tools,-54.99
+2026-03-01,Amazon Web Services,Cloud Hosting,-312.00
+2026-03-03,Netflix Business,Subscriptions,-15.99
+2026-03-05,Stripe Revenue — Week 1,Income,5200.00
+2026-03-07,Slack Pro,Software Tools,-87.50
+2026-03-10,Figma Professional,Software Tools,-45.00
+2026-03-12,Vercel Pro,Cloud Hosting,-20.00
+2026-03-14,Freelance Project — Gamma Ltd,Income,4000.00
+2026-03-16,GitHub Teams,Software Tools,-21.00
+2026-03-18,DigitalOcean Droplets,Cloud Hosting,-72.00
+2026-03-20,Stripe Revenue — Week 3,Income,4800.00
+2026-03-22,QuickBooks Online,Accounting,-30.00
+2026-03-25,Payroll — Engineering Team,Payroll,-8500.00
+2026-03-28,Stripe Revenue — Week 4,Income,3200.00
+2026-03-30,Adobe Creative Cloud,Software Tools,-54.99`;
+
+function downloadSampleCsv() {
+  const blob = new Blob([SAMPLE_CSV], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "insightstack-sample.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ── Back to top ────────────────────────────────────────────────────────────────
 function BackToTop() {
   const [visible, setVisible] = useState(false);
@@ -552,6 +621,8 @@ function BackToTop() {
 export default function Home() {
   const [bentoActive, setBentoActive] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
   const bentoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -680,6 +751,18 @@ export default function Home() {
               <Link href="/demo" className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-8 py-3.5 text-sm font-medium text-zinc-300 backdrop-blur-sm transition-all duration-300 hover:border-blue-500/25 hover:bg-white/[0.06] hover:text-white">
                 View live demo
               </Link>
+            </div>
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={downloadSampleCsv}
+                className="flex items-center gap-1.5 text-xs text-[#8892A4]/60 transition hover:text-[#8892A4]"
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download sample CSV to try it
+              </button>
             </div>
           </Reveal>
 
@@ -911,7 +994,7 @@ export default function Home() {
               },
             ].map((card, i) => (
               <Reveal key={card.title} delay={i * 80}>
-                <TiltCard className="group flex flex-col h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A1628] p-6 hover:border-white/[0.10] hover:shadow-[0_16px_50px_rgba(0,0,0,0.5)]">
+                <TiltCard className="relative group flex flex-col h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A1628] p-6 hover:border-white/[0.10] hover:shadow-[0_16px_50px_rgba(0,0,0,0.5)]">
                   <div className={`absolute inset-0 bg-gradient-to-br ${card.accent === "blue" ? "from-blue-500/3" : card.accent === "violet" ? "from-violet-500/3" : "from-emerald-500/3"} to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100`} />
                   <div className="relative mb-4">{card.icon}</div>
                   <h3 className="relative mb-2 text-base font-bold text-white">{card.title}</h3>
@@ -931,45 +1014,78 @@ export default function Home() {
       {/* ── Pricing ──────────────────────────────────────────────────────────── */}
       <section id="pricing" className="px-6 py-28">
         <div className="mx-auto max-w-5xl">
-          <Reveal className="mb-14 text-center">
+          <Reveal className="mb-10 text-center">
             <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-400">Pricing</p>
             <h2 className="text-3xl font-black tracking-tight sm:text-4xl">Transparent pricing. No surprises.</h2>
             <p className="mt-4 text-[#8892A4]">Start free. Upgrade when you need more power. Cancel anytime.</p>
           </Reveal>
+
+          {/* Billing toggle */}
+          <Reveal className="mb-10 flex items-center justify-center gap-3">
+            <span className={`text-sm font-medium transition-colors ${billingPeriod === "monthly" ? "text-white" : "text-[#8892A4]"}`}>
+              Monthly
+            </span>
+            <button
+              type="button"
+              onClick={() => setBillingPeriod(p => p === "monthly" ? "annual" : "monthly")}
+              aria-label="Toggle billing period"
+              className={`relative h-6 w-11 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050B18] ${billingPeriod === "annual" ? "bg-blue-500" : "bg-zinc-700"}`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${billingPeriod === "annual" ? "translate-x-5" : "translate-x-0"}`}
+              />
+            </button>
+            <span className={`text-sm font-medium transition-colors ${billingPeriod === "annual" ? "text-white" : "text-[#8892A4]"}`}>
+              Annual
+            </span>
+            <div
+              className="overflow-hidden transition-all duration-300"
+              style={{ maxWidth: billingPeriod === "annual" ? "90px" : "0px", opacity: billingPeriod === "annual" ? 1 : 0 }}
+            >
+              <span className="whitespace-nowrap rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/20">
+                Save 20%
+              </span>
+            </div>
+          </Reveal>
+
           <div className="grid gap-4 sm:grid-cols-3">
-            {pricingPlans.map((plan,i) => (
-              <Reveal key={plan.name} delay={i * 80}>
-                <TiltCard className={`relative flex flex-col h-full overflow-hidden rounded-2xl p-6 ${plan.hot ? "border-0 bg-[#0A1628] shadow-[0_0_0_1px_rgba(59,130,246,0.45),0_24px_80px_rgba(59,130,246,0.12)]" : "border border-white/[0.06] bg-[#0A1628]/60"}`}>
-                  {plan.hot && (
-                    <>
-                      <div className="absolute inset-0 bg-gradient-to-b from-blue-500/6 to-transparent" />
-                      <div className="absolute -top-px left-1/2 -translate-x-1/2 whitespace-nowrap rounded-b-full bg-blue-500 px-5 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-[0_4px_20px_rgba(59,130,246,0.5)]">Most Popular</div>
-                    </>
-                  )}
-                  <div className="relative flex flex-1 flex-col pt-2">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-[#8892A4]">{plan.name}</p>
-                    <div className="mt-3 flex items-end gap-1">
-                      <span className="text-4xl font-black text-white">{plan.price}</span>
-                      {plan.period && <span className="mb-1.5 text-sm text-[#8892A4]">{plan.period}</span>}
+            {pricingPlans.map((plan, i) => {
+              const displayPrice = billingPeriod === "annual" ? plan.annualPrice : plan.price;
+              const displayPeriod = billingPeriod === "annual" ? plan.annualNote : plan.period;
+              return (
+                <Reveal key={plan.name} delay={i * 80}>
+                  <TiltCard className={`relative flex flex-col h-full overflow-hidden rounded-2xl p-6 ${plan.hot ? "border-0 bg-[#0A1628] shadow-[0_0_0_1px_rgba(59,130,246,0.45),0_24px_80px_rgba(59,130,246,0.12)]" : "border border-white/[0.06] bg-[#0A1628]/60"}`}>
+                    {plan.hot && (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-b from-blue-500/6 to-transparent" />
+                        <div className="absolute -top-px left-1/2 -translate-x-1/2 whitespace-nowrap rounded-b-full bg-blue-500 px-5 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-[0_4px_20px_rgba(59,130,246,0.5)]">Most Popular</div>
+                      </>
+                    )}
+                    <div className="relative flex flex-1 flex-col pt-2">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-[#8892A4]">{plan.name}</p>
+                      <div className="mt-3 flex items-end gap-1">
+                        <span className="text-4xl font-black text-white transition-all duration-200">{displayPrice}</span>
+                        {displayPeriod && <span className="mb-1.5 text-sm text-[#8892A4]">{displayPeriod}</span>}
+                      </div>
+                      <p className="mt-1 text-sm text-[#8892A4]">{plan.tagline}</p>
+                      <ul className="mt-6 space-y-3">
+                        {plan.features.map(f => (
+                          <li key={f} className="flex items-start gap-2.5 text-sm text-zinc-300">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-auto pt-8">
+                        <Link href={plan.href} className={`block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all duration-200 hover:-translate-y-px ${plan.hot ? "bg-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)] hover:bg-blue-400 hover:shadow-[0_0_40px_rgba(59,130,246,0.55)]" : "border border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:border-white/[0.14] hover:text-white"}`}>
+                          {plan.cta}
+                        </Link>
+                      </div>
                     </div>
-                    <p className="mt-1 text-sm text-[#8892A4]">{plan.tagline}</p>
-                    <ul className="mt-6 space-y-3">
-                      {plan.features.map(f => (
-                        <li key={f} className="flex items-start gap-2.5 text-sm text-zinc-300">
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-auto pt-8">
-                      <Link href={plan.href} className={`block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all duration-200 hover:-translate-y-px ${plan.hot ? "bg-blue-500 text-white shadow-[0_0_24px_rgba(59,130,246,0.35)] hover:bg-blue-400 hover:shadow-[0_0_40px_rgba(59,130,246,0.55)]" : "border border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:border-white/[0.14] hover:text-white"}`}>
-                        {plan.cta}
-                      </Link>
-                    </div>
-                  </div>
-                </TiltCard>
-              </Reveal>
-            ))}
+                  </TiltCard>
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -1012,12 +1128,32 @@ export default function Home() {
             <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-400">FAQ</p>
             <h2 className="text-3xl font-black tracking-tight sm:text-4xl">Common questions.</h2>
           </Reveal>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {faqs.map((faq, i) => (
               <Reveal key={faq.q} delay={i * 40}>
-                <div className="rounded-2xl border border-white/[0.06] bg-[#0A1628] px-6 py-5">
-                  <p className="mb-2 font-semibold text-white">{faq.q}</p>
-                  <p className="text-sm leading-relaxed text-zinc-500">{faq.a}</p>
+                <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0A1628] transition-colors hover:border-white/[0.10]">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                  >
+                    <span className="font-semibold text-white">{faq.q}</span>
+                    <svg
+                      className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform duration-300 ${openFaq === i ? "rotate-180" : ""}`}
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {/* CSS grid trick: animates from 0fr→1fr for perfect height transition */}
+                  <div
+                    className="grid transition-all duration-300 ease-in-out"
+                    style={{ gridTemplateRows: openFaq === i ? "1fr" : "0fr" }}
+                  >
+                    <div className="overflow-hidden">
+                      <p className="px-6 pb-5 text-sm leading-relaxed text-zinc-500">{faq.a}</p>
+                    </div>
+                  </div>
                 </div>
               </Reveal>
             ))}

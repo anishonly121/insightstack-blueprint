@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import { ToastProvider } from "@/components/Toaster";
 
 export const metadata: Metadata = {
   title: "InsightStack — AI-Powered Finance Analytics",
@@ -38,7 +39,9 @@ export default function RootLayout({
           } as React.CSSProperties
         }
       >
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
         <Analytics />
       </body>
     </html>

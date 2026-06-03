@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { LogoMark } from "@/components/LogoMark";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/Toaster";
 import {
   api,
   clearToken,
@@ -12,6 +13,56 @@ import {
   type Dataset,
   type PaginatedMeta,
 } from "@/lib/api";
+
+// ── Demo CSV data ─────────────────────────────────────────────────────────────
+const DEMO_CSV = `date,description,category,amount
+2026-01-02,Amazon Web Services,Cloud Hosting,-892.00
+2026-01-04,Stripe Revenue — Week 1,Income,4200.00
+2026-01-05,Netflix Business,Subscriptions,-15.99
+2026-01-07,Slack Pro,Software Tools,-87.50
+2026-01-08,Figma Professional,Software Tools,-45.00
+2026-01-09,Vercel Pro,Cloud Hosting,-20.00
+2026-01-10,Google Workspace,Software Tools,-12.00
+2026-01-12,Freelance Project — Acme Corp,Income,3500.00
+2026-01-14,GitHub Teams,Software Tools,-21.00
+2026-01-15,Amazon Web Services — Anomaly Spike,Cloud Hosting,-1247.00
+2026-01-16,Zoom Business,Software Tools,-15.99
+2026-01-17,DigitalOcean Droplets,Cloud Hosting,-72.00
+2026-01-20,Stripe Revenue — Week 3,Income,3800.00
+2026-01-22,QuickBooks Online,Accounting,-30.00
+2026-01-24,Notion Team Plan,Software Tools,-16.00
+2026-01-25,Payroll — Engineering Team,Payroll,-8500.00
+2026-01-27,Office Supplies,Office,-234.00
+2026-01-28,Stripe Revenue — Week 4,Income,5100.00
+2026-01-30,Adobe Creative Cloud,Software Tools,-54.99
+2026-02-01,Amazon Web Services,Cloud Hosting,-234.00
+2026-02-03,Netflix Business,Subscriptions,-15.99
+2026-02-05,Stripe Revenue — Week 1,Income,4600.00
+2026-02-06,Slack Pro,Software Tools,-87.50
+2026-02-08,Figma Professional,Software Tools,-45.00
+2026-02-10,Vercel Pro,Cloud Hosting,-20.00
+2026-02-12,Freelance Project — Beta Corp,Income,2800.00
+2026-02-14,GitHub Teams,Software Tools,-21.00
+2026-02-16,Zoom Business,Software Tools,-15.99
+2026-02-18,DigitalOcean Droplets,Cloud Hosting,-72.00
+2026-02-20,Stripe Revenue — Week 3,Income,4100.00
+2026-02-22,QuickBooks Online,Accounting,-30.00
+2026-02-25,Payroll — Engineering Team,Payroll,-8500.00
+2026-02-28,Adobe Creative Cloud,Software Tools,-54.99
+2026-03-01,Amazon Web Services,Cloud Hosting,-312.00
+2026-03-03,Netflix Business,Subscriptions,-15.99
+2026-03-05,Stripe Revenue — Week 1,Income,5200.00
+2026-03-07,Slack Pro,Software Tools,-87.50
+2026-03-10,Figma Professional,Software Tools,-45.00
+2026-03-12,Vercel Pro,Cloud Hosting,-20.00
+2026-03-14,Freelance Project — Gamma Ltd,Income,4000.00
+2026-03-16,GitHub Teams,Software Tools,-21.00
+2026-03-18,DigitalOcean Droplets,Cloud Hosting,-72.00
+2026-03-20,Stripe Revenue — Week 3,Income,4800.00
+2026-03-22,QuickBooks Online,Accounting,-30.00
+2026-03-25,Payroll — Engineering Team,Payroll,-8500.00
+2026-03-28,Stripe Revenue — Week 4,Income,3200.00
+2026-03-30,Adobe Creative Cloud,Software Tools,-54.99`;
 
 type ActionState = {
   uploadLoading: boolean;
@@ -114,6 +165,68 @@ function OnboardingChecklist({ datasets, totalDatasets }: { datasets: Dataset[];
   );
 }
 
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+
+const SHORTCUT_LIST = [
+  { keys: ["N"], desc: "Focus new dataset input" },
+  { keys: ["→"], desc: "Next page of datasets" },
+  { keys: ["←"], desc: "Previous page of datasets" },
+  { keys: ["?"], desc: "Toggle this panel" },
+  { keys: ["Esc"], desc: "Close panel / cancel rename" },
+];
+
+function ShortcutsPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-xs rounded-2xl border border-white/[0.08] bg-[#0A1628] p-6 shadow-[0_32px_80px_rgba(0,0,0,0.7)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h2 className="text-sm font-bold text-white">Keyboard shortcuts</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-zinc-600 transition hover:text-zinc-300"
+            aria-label="Close"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="space-y-3">
+          {SHORTCUT_LIST.map((s) => (
+            <div key={s.desc} className="flex items-center justify-between gap-4">
+              <span className="text-sm text-zinc-400">{s.desc}</span>
+              <div className="flex items-center gap-1">
+                {s.keys.map((k) => (
+                  <kbd
+                    key={k}
+                    className="inline-flex min-w-[28px] items-center justify-center rounded-md border border-white/10 bg-zinc-800 px-1.5 py-1 font-mono text-xs text-zinc-300 shadow-[0_1px_0_rgba(0,0,0,0.4)]"
+                  >
+                    {k}
+                  </kbd>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-5 text-[10px] text-zinc-700">Shortcuts are disabled while typing in an input.</p>
+      </div>
+    </div>
+  );
+}
+
 function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
@@ -152,9 +265,9 @@ function DeleteModal({ name, onConfirm, onCancel }: { name: string; onConfirm: (
   );
 }
 
-function EmptyState() {
+function EmptyState({ onLoadDemo, demoLoading }: { onLoadDemo: () => void; demoLoading: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-5 px-6 py-20 text-center">
+    <div className="flex flex-col items-center gap-5 px-6 py-16 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/8 bg-zinc-800">
         <svg className="h-8 w-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 64 64" strokeWidth={1.2}>
           <rect x="8" y="12" width="48" height="40" rx="4" strokeDasharray="4 3" />
@@ -178,12 +291,37 @@ function EmptyState() {
           CSV format
         </span>
       </div>
+      {/* Demo loader */}
+      <div className="mt-2 flex flex-col items-center gap-2">
+        <button
+          type="button"
+          onClick={onLoadDemo}
+          disabled={demoLoading}
+          className="group flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/8 px-5 py-2.5 text-sm font-semibold text-blue-400 transition hover:border-blue-500/40 hover:bg-blue-500/15 disabled:opacity-50"
+        >
+          {demoLoading ? (
+            <>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-400" />
+              Loading demo data…
+            </>
+          ) : (
+            <>
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" />
+              </svg>
+              Try with demo data — one click
+            </>
+          )}
+        </button>
+        <p className="text-xs text-zinc-700">47 real transactions · anomalies included · instant AI-ready</p>
+      </div>
     </div>
   );
 }
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [meta, setMeta] = useState<PaginatedMeta>({ page: 1, pageSize: 8, total: 0, totalPages: 1 });
@@ -196,7 +334,11 @@ export default function DashboardPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const [quota, setQuota] = useState<import("@/lib/api").QuotaInfo | null>(null);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [draggingOver, setDraggingOver] = useState<Record<string, boolean>>({});
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [showUpgradedBanner, setShowUpgradedBanner] = useState(() => {
     if (typeof window === "undefined") return false;
     const show = new URLSearchParams(window.location.search).get("upgraded") === "1";
@@ -239,6 +381,41 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as Element).tagName.toLowerCase();
+      const isTyping =
+        ["input", "textarea", "select"].includes(tag) ||
+        (e.target as HTMLElement).isContentEditable;
+
+      if (e.key === "?" && !isTyping) {
+        e.preventDefault();
+        setShowShortcuts((s) => !s);
+        return;
+      }
+      if (e.key === "Escape") {
+        setShowShortcuts(false);
+        return;
+      }
+      if (isTyping) return;
+
+      if ((e.key === "n" || e.key === "N") && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        nameInputRef.current?.focus();
+      }
+      if (e.key === "ArrowRight" && !e.metaKey && meta.page < meta.totalPages) {
+        void loadDatasets(meta.page + 1);
+      }
+      if (e.key === "ArrowLeft" && !e.metaKey && meta.page > 1) {
+        void loadDatasets(meta.page - 1);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meta.page, meta.totalPages]);
+
   const onCreateDataset = async (e: FormEvent) => {
     e.preventDefault();
     setPageError("");
@@ -247,8 +424,11 @@ export default function DashboardPage() {
       await api.createDataset({ name });
       setName("");
       await loadDatasets(1);
+      toast({ type: "success", title: "Dataset created", message: `"${name}" is ready for a CSV upload.` });
     } catch (err) {
-      setPageError(err instanceof Error ? err.message : "Failed to create dataset");
+      const msg = err instanceof Error ? err.message : "Failed to create dataset";
+      setPageError(msg);
+      toast({ type: "error", title: "Failed to create dataset", message: msg });
     } finally {
       setCreateLoading(false);
     }
@@ -259,11 +439,18 @@ export default function DashboardPage() {
     if (!file) { setAction(datasetId, { error: "Select a CSV file first" }); return; }
     setAction(datasetId, { uploadLoading: true, error: "" });
     try {
-      await api.uploadDatasetCsv(datasetId, file);
+      const res = await api.uploadDatasetCsv(datasetId, file);
       setFileByDataset((prev) => ({ ...prev, [datasetId]: null }));
       await loadDatasets(meta.page);
+      toast({
+        type: "success",
+        title: "CSV uploaded",
+        message: `${res.data.rowCount.toLocaleString()} rows parsed — ready for AI insights.`,
+      });
     } catch (err) {
-      setAction(datasetId, { error: err instanceof Error ? err.message : "Upload failed" });
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setAction(datasetId, { error: msg });
+      toast({ type: "error", title: "Upload failed", message: msg });
     } finally {
       setAction(datasetId, { uploadLoading: false });
     }
@@ -271,11 +458,15 @@ export default function DashboardPage() {
 
   const onGenerateInsights = async (datasetId: string) => {
     setAction(datasetId, { insightLoading: true, error: "" });
+    toast({ type: "info", title: "Generating insights…", message: "GPT-4o is analysing your transactions.", duration: 8000 });
     try {
       await api.generateInsights(datasetId);
       await loadDatasets(meta.page);
+      toast({ type: "success", title: "Insights ready", message: "Open the dataset to view your AI analysis." });
     } catch (err) {
-      setAction(datasetId, { error: err instanceof Error ? err.message : "Insights failed" });
+      const msg = err instanceof Error ? err.message : "Insights failed";
+      setAction(datasetId, { error: msg });
+      toast({ type: "error", title: "Insights failed", message: msg });
     } finally {
       setAction(datasetId, { insightLoading: false });
     }
@@ -287,16 +478,40 @@ export default function DashboardPage() {
 
   const onDeleteConfirmed = async () => {
     if (!deleteConfirm) return;
-    const { id: datasetId } = deleteConfirm;
+    const { id: datasetId, name: datasetName } = deleteConfirm;
     setDeleteConfirm(null);
     setAction(datasetId, { deleteLoading: true, error: "" });
     try {
       await api.deleteDataset(datasetId);
       await loadDatasets(Math.min(meta.page, Math.ceil((meta.total - 1) / meta.pageSize) || 1));
+      toast({ type: "success", title: "Dataset deleted", message: `"${datasetName}" has been permanently removed.` });
     } catch (err) {
-      setAction(datasetId, { error: err instanceof Error ? err.message : "Delete failed" });
+      const msg = err instanceof Error ? err.message : "Delete failed";
+      setAction(datasetId, { error: msg });
+      toast({ type: "error", title: "Delete failed", message: msg });
     } finally {
       setAction(datasetId, { deleteLoading: false });
+    }
+  };
+
+  const onLoadDemo = async () => {
+    setDemoLoading(true);
+    try {
+      const demoDataset = await api.createDataset({ name: "Demo: Q1 2026 Operating Expenses" });
+      const blob = new Blob([DEMO_CSV], { type: "text/csv" });
+      const file = new File([blob], "insightstack-demo.csv", { type: "text/csv" });
+      await api.uploadDatasetCsv(demoDataset.data.id, file);
+      await loadDatasets(1);
+      toast({
+        type: "success",
+        title: "Demo data loaded",
+        message: "47 transactions ready — click Open → to explore and generate insights.",
+        duration: 6000,
+      });
+    } catch (err) {
+      toast({ type: "error", title: "Could not load demo", message: err instanceof Error ? err.message : "Please try again." });
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -369,6 +584,15 @@ export default function DashboardPage() {
                 {upgradeLoading ? "…" : "✦ Try Pro"}
               </button>
             )}
+            {/* Keyboard shortcuts hint */}
+            <button
+              type="button"
+              onClick={() => setShowShortcuts(true)}
+              title="Keyboard shortcuts (?)"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/8 bg-zinc-900 text-xs font-black text-zinc-600 shadow-sm transition hover:border-white/15 hover:text-zinc-300"
+            >
+              ?
+            </button>
             <button type="button" onClick={() => void onLogout()} className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Logout</button>
           </div>
         </header>
@@ -422,6 +646,7 @@ export default function DashboardPage() {
           </div>
           <form onSubmit={onCreateDataset} className="flex flex-col gap-2 sm:flex-row">
             <input
+              ref={nameInputRef}
               className="flex-1 rounded-xl border border-white/8 bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-600 transition focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               placeholder="e.g. January 2026 Expenses"
               value={name}
@@ -501,7 +726,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : !hasDatasets ? (
-            <EmptyState />
+            <EmptyState onLoadDemo={() => void onLoadDemo()} demoLoading={demoLoading} />
           ) : (
             <>
               <div className="divide-y divide-white/4">
@@ -586,12 +811,40 @@ export default function DashboardPage() {
 
                       {/* Actions row */}
                       <div className="flex flex-wrap items-center gap-2">
-                        <label className="flex flex-1 min-w-[200px] cursor-pointer items-center gap-2 rounded-lg border border-white/6 bg-zinc-800 px-3 py-2.5 text-sm text-zinc-500 transition hover:border-white/12 hover:text-zinc-300">
-                          <svg className="h-4 w-4 shrink-0 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                        <label
+                          className={[
+                            "flex flex-1 min-w-[200px] cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition",
+                            draggingOver[dataset.id]
+                              ? "border-blue-500/50 bg-blue-500/10 text-blue-300"
+                              : selectedFile
+                              ? "border-emerald-500/30 bg-emerald-500/8 text-emerald-300"
+                              : "border-white/6 bg-zinc-800 text-zinc-500 hover:border-white/12 hover:text-zinc-300",
+                          ].join(" ")}
+                          onDragOver={(e) => { e.preventDefault(); setDraggingOver(prev => ({ ...prev, [dataset.id]: true })); }}
+                          onDragEnter={(e) => { e.preventDefault(); setDraggingOver(prev => ({ ...prev, [dataset.id]: true })); }}
+                          onDragLeave={() => setDraggingOver(prev => ({ ...prev, [dataset.id]: false }))}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setDraggingOver(prev => ({ ...prev, [dataset.id]: false }));
+                            const file = e.dataTransfer.files[0];
+                            if (file && (file.name.endsWith(".csv") || file.type === "text/csv")) {
+                              setFileByDataset(prev => ({ ...prev, [dataset.id]: file }));
+                            }
+                          }}
+                        >
+                          <svg className="h-4 w-4 shrink-0 text-current opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                            {draggingOver[dataset.id] ? (
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                            ) : (
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                            )}
                           </svg>
                           <span className="truncate text-xs">
-                            {selectedFile ? selectedFile.name : "Choose CSV file…"}
+                            {draggingOver[dataset.id]
+                              ? "Drop to attach…"
+                              : selectedFile
+                              ? selectedFile.name
+                              : "Choose or drop CSV…"}
                           </span>
                           <input
                             type="file"
@@ -666,6 +919,10 @@ export default function DashboardPage() {
           onConfirm={() => void onDeleteConfirmed()}
           onCancel={() => setDeleteConfirm(null)}
         />
+      )}
+
+      {showShortcuts && (
+        <ShortcutsPanel onClose={() => setShowShortcuts(false)} />
       )}
     </main>
   );
