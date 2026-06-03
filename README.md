@@ -9,11 +9,21 @@
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e)
 
-InsightStack is a **production-grade full-stack web application** that turns raw CSV bank exports into a visual financial dashboard with OpenAI-generated spending insights. Built end-to-end with authentication, rate limiting, audit logging, caching, structured logging, 29 integration tests and a Playwright E2E suite — no mocks.
+InsightStack is a **production-grade full-stack SaaS** that turns raw CSV bank exports into a visual financial dashboard with GPT-4o spending insights. Built end-to-end with real auth, real payments, real AI, 29 integration tests and a Playwright E2E suite — no mocks.
 
-**[Live Demo →](https://insightstack-peach.vercel.app)** · **[How It Works](https://insightstack-peach.vercel.app/demo)** · **[About the Project](https://insightstack-peach.vercel.app/about)**
+**[Live Demo →](https://insightstack-peach.vercel.app)** · **[How It Works](https://insightstack-peach.vercel.app/demo)** · **[Changelog](https://insightstack-peach.vercel.app/changelog)**
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fanishonly121%2Finsightstack-blueprint&root-directory=app)
+
+---
+
+## Why I built this
+
+Most finance apps that offer AI insights require you to connect your bank account via OAuth — giving a third-party service live read access to your transactions in exchange for a spending report.
+
+InsightStack takes the opposite approach: export a CSV from your bank (something every bank supports, no credentials required), upload it, and get the same quality analysis. Your banking credentials never leave your bank. Your transaction data only lives in your own database.
+
+That constraint forced better engineering. A parser that handles any CSV format. A metrics engine that computes everything server-side before AI sees any data. A pipeline designed to work even when OpenAI is unavailable — because I built it knowing the fallback would run.
 
 ---
 

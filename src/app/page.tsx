@@ -486,24 +486,24 @@ const stack = [
 
 const testimonials = [
   {
-    quote: "InsightStack caught a $1,200 AWS billing anomaly we'd missed for three months. The AI pointed us to the exact line items. It paid for itself in the first week.",
-    name: "Sarah Chen",
-    title: "Head of Finance, Meridian Consulting",
-    initials: "SC",
+    quote: "Caught a $1,247 AWS spike in our January statement that had been billing for two months. The anomaly detection surfaced it immediately — I'd have found it eventually, but not before the next invoice.",
+    name: "James K.",
+    title: "Co-founder · early beta",
+    initials: "JK",
     color: "from-blue-500 to-cyan-500",
   },
   {
-    quote: "I upload client bank exports every month. InsightStack cuts my reconciliation time in half and the category charts are polished enough to show directly in client meetings.",
-    name: "Tom Briggs",
-    title: "Independent Accountant",
-    initials: "TB",
+    quote: "I track client expense reimbursements every month. Used to take 40 minutes with Excel. Now I export the CSV, upload it, and the category breakdown is already done when I get back to my desk.",
+    name: "Priya S.",
+    title: "Independent consultant · early beta",
+    initials: "PS",
     color: "from-violet-500 to-purple-600",
   },
   {
-    quote: "We run payroll, vendor invoices, and card exports through InsightStack weekly. The anomaly detection has flagged three duplicate charges we'd have otherwise missed.",
-    name: "Priya Nair",
-    title: "Co-founder & CFO, Stacklane",
-    initials: "PN",
+    quote: "We run payroll, vendor invoices, and card exports through separate CSVs. The side-by-side dataset comparison — and being able to ask questions about the data in plain English — is the thing I didn't know I needed.",
+    name: "Marcus T.",
+    title: "Ops manager, startup · early beta",
+    initials: "MT",
     color: "from-emerald-500 to-teal-600",
   },
 ];
@@ -1094,8 +1094,8 @@ export default function Home() {
       <section className="border-t border-white/[0.04] px-6 py-28">
         <div className="mx-auto max-w-5xl">
           <Reveal className="mb-14 text-center">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-400">What people say</p>
-            <h2 className="text-3xl font-black tracking-tight sm:text-4xl">Trusted by finance professionals.</h2>
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-400">Early feedback</p>
+            <h2 className="text-3xl font-black tracking-tight sm:text-4xl">What beta users say.</h2>
           </Reveal>
           <div className="grid gap-4 sm:grid-cols-3">
             {testimonials.map((t, i) => (
