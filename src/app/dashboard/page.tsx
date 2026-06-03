@@ -588,17 +588,17 @@ export default function DashboardPage() {
             </h1>
             {user && <p className="text-sm text-zinc-500">{user.email}</p>}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {user?.role === "ADMIN" && (
               <Link
                 href="/admin"
-                className="rounded-lg border border-blue-500/20 bg-blue-500/8 px-3 py-2 text-sm font-semibold text-blue-400 transition hover:bg-blue-500/15"
+                className="hidden sm:inline-flex rounded-lg border border-blue-500/20 bg-blue-500/8 px-3 py-2 text-sm font-semibold text-blue-400 transition hover:bg-blue-500/15"
               >
                 Admin Panel
               </Link>
             )}
-            <Link href="/dashboard/compare" className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Compare</Link>
-            <Link href="/dashboard/activity" className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Activity</Link>
+            <Link href="/dashboard/compare" className="hidden sm:inline-flex rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Compare</Link>
+            <Link href="/dashboard/activity" className="hidden sm:inline-flex rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Activity</Link>
             <Link href="/dashboard/settings" className="rounded-lg border border-white/8 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-400 shadow-sm transition hover:border-white/15 hover:text-white">Settings</Link>
             {quota && !quota.isPro && (
               <button

@@ -239,6 +239,14 @@ a, button, input, select, textarea {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* ── About page animations ───────────────────────────────────────────────── */
+@keyframes fadeIn    { from { opacity: 0; }   to { opacity: 1; }   }
+@keyframes progressBar { from { width: 0%; } to { width: 100%; } }
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.6; transform: scale(1);    }
+  50%       { opacity: 1;   transform: scale(1.05); }
+}
+
 /* ── Noise overlay ───────────────────────────────────────────────────────── */
 .noise::after {
   content: '';
