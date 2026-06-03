@@ -9,88 +9,117 @@ mkdirSync(OUT, { recursive: true });
 
 const BASE = "https://insightstack-peach.vercel.app";
 const EMAIL = `screenshot.bot.${Date.now()}@insightstack.dev`;
-const PASS = "Screenshot123!";
-const CSV_PATH = join(__dirname, "../docs/demo-transactions.csv");
+const PASS  = "Screenshot123!";
+const VIEWPORT_DESKTOP = { width: 1440, height: 900 };
 
-const VIEWPORT = { width: 1440, height: 900 };
+async function shot(page, name) {
+  const p = join(OUT, `${name}.png`);
+  await page.screenshot({ path: p, fullPage: false });
+  console.log(`  ✓ ${name}.png`);
+}
 
-async function shot(page, name, clip) {
-  await page.screenshot({
-    path: join(OUT, `${name}.png`),
-    ...(clip ? { clip } : { fullPage: false }),
-  });
-  console.log(`✓ ${name}.png`);
+async function wait(ms) {
+  return new Promise(r => setTimeout(r, ms));
 }
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
-  const ctx = await browser.newContext({ viewport: VIEWPORT });
-  const page = await ctx.newPage();
+  const ctx     = await browser.newContext({ viewport: VIEWPORT_DESKTOP });
+  const page    = await ctx.newPage();
 
-  // ── 1. Landing page ────────────────────────────────────────────────────────
-  console.log("→ Landing page");
+  // ── 1. Landing page ──────────────────────────────────────────────────────
+  console.log("\n[1/8] Landing page");
   await page.goto(BASE, { waitUntil: "networkidle" });
-  await page.waitForTimeout(1500);
+  await wait(2500);                         // let hero animations finish
   await shot(page, "landing");
 
-  // ── 2. Register ────────────────────────────────────────────────────────────
-  console.log("→ Registering account");
-  await page.goto(`${BASE}/login?mode=register`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
-  await page.fill('input[autocomplete="name"]', "Demo User");
-  await page.fill('input[type="email"]', EMAIL);
+  // ── 2. Pricing page ──────────────────────────────────────────────────────
+  console.log("[2/8] Pricing page");
+  await page.goto(`${BASE}/pricing`, { waitUntil: "networkidle" });
+  await wait(800);
+  // Toggle annual so it shows the Save 20% state
+  await page.click('button[aria-label="Toggle billing period"]');
+  await wait(400);
+  await shot(page, "pricing");
+
+  // ── 3. Register a fresh account ──────────────────────────────────────────
+  console.log("[3/8] Registering account…");
+  await page.goto(`${BASE}/login`, { waitUntil: "networkidle" });
+  await wait(800);
+  // Click the "Register" tab to switch the form to register mode
+  await page.click('button:has-text("Register")');
+  await wait(600);
+  // Wait for the name field to appear (only visible in register mode)
+  await page.waitForSelector('input[autocomplete="name"]', { timeout: 5000 });
+  await page.fill('input[autocomplete="name"]',         "Anish Bhole");
+  await page.fill('input[type="email"]',                EMAIL);
   await page.fill('input[autocomplete="new-password"]', PASS);
   await page.click('button[type="submit"]');
-  await page.waitForURL("**/dashboard", { timeout: 15000 });
-  console.log("  ✓ Registered and redirected to dashboard");
+  // Wait for redirect — could be /dashboard or could already be there
+  await page.waitForURL("**/dashboard**", { timeout: 30000 });
+  await wait(1500);
+  console.log("  ✓ Registered — on dashboard");
 
-  // ── 3. Create dataset ──────────────────────────────────────────────────────
-  console.log("→ Creating dataset");
-  await page.fill('input[placeholder*="January"]', "Demo — Monthly Expenses");
-  await page.click('button[type="submit"]:has-text("Create")');
-  await page.waitForTimeout(1500);
+  // ── 4. Load demo data via the one-click button ────────────────────────────
+  console.log("[4/8] Loading demo data…");
+  const demoBtn = page.locator('button:has-text("Try with demo data")');
+  await demoBtn.waitFor({ timeout: 8000 });
+  await demoBtn.click();
+  // Wait for dataset creation + CSV upload to complete (spinner disappears)
+  await page.waitForSelector('button:has-text("Try with demo data")', { state: "hidden", timeout: 30000 })
+    .catch(() => {}); // might already be gone if it unmounted
+  await wait(3000);
+  console.log("  ✓ Demo data loaded");
 
-  // ── 4. Upload CSV ──────────────────────────────────────────────────────────
-  console.log("→ Uploading CSV");
-  const fileInput = page.locator('input[type="file"]').first();
-  await fileInput.setInputFiles(CSV_PATH);
-  await page.waitForTimeout(500);
-  await page.click('button:has-text("Upload CSV")');
-  await page.waitForTimeout(3000);
-
-  // ── 5. Dashboard screenshot (with data) ────────────────────────────────────
-  console.log("→ Dashboard screenshot");
+  // ── 5. Dashboard screenshot (data populated, search + sort visible) ───────
+  console.log("[5/8] Dashboard screenshot");
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(1500);
+  await wait(1500);
   await shot(page, "dashboard");
 
-  // ── 6. Open dataset detail page ────────────────────────────────────────────
-  console.log("→ Opening dataset detail");
-  await page.click('a:has-text("Open →")');
-  await page.waitForURL("**/dashboard/datasets/**", { timeout: 10000 });
-  await page.waitForTimeout(2500);
+  // ── 6. Dataset detail page ────────────────────────────────────────────────
+  console.log("[6/8] Dataset detail page");
+  const openLink = page.locator('a:has-text("Open →")').first();
+  await openLink.waitFor({ timeout: 8000 });
+  await openLink.click();
+  await page.waitForURL("**/dashboard/datasets/**", { timeout: 15000 });
+  // Wait for the charts section to appear (means data has loaded)
+  await page.waitForSelector('text="Category Breakdown"', { timeout: 20000 });
+  await wait(2000);   // let charts fully render
   await shot(page, "dataset-detail");
 
-  // ── 7. Generate AI insights ────────────────────────────────────────────────
-  console.log("→ Generating AI insights (this takes ~15s)");
-  const insightBtn = page.locator('button:has-text("Generate Insights")');
-  await insightBtn.click();
-  // Wait up to 30s for insights to appear
+  // LinkedIn crop taken here — same page, same data, just narrower viewport
+  console.log("  Taking LinkedIn crop from dataset detail…");
+  await page.setViewportSize({ width: 1200, height: 630 });
+  await wait(800);
+  await shot(page, "linkedin");
+
+  // ── 7. Generate AI insights ───────────────────────────────────────────────
+  console.log("[7/8] Generating AI insights (up to 45s)…");
+  const genBtn = page.locator('button:has-text("Generate Insights")');
+  await genBtn.waitFor({ timeout: 8000 });
+  await genBtn.click();
   try {
-    await page.waitForSelector('article', { timeout: 30000 });
-    await page.waitForTimeout(1000);
+    // Wait for streaming to finish — the panel switches to "Analysis Complete"
+    await page.waitForSelector('text="Analysis Complete"', { timeout: 45000 });
+    await wait(3000);  // let the insight card appear
     console.log("  ✓ Insights generated");
   } catch {
-    console.log("  ⚠ Insights timed out — screenshotting current state");
+    console.log("  ⚠ Insights took too long — capturing current state");
   }
   await shot(page, "insights");
 
-  // ── 8. About page ──────────────────────────────────────────────────────────
-  console.log("→ About page");
+  // ── 8. About page ─────────────────────────────────────────────────────────
+  console.log("[8/8] About page");
   await page.goto(`${BASE}/about`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(1000);
+  await wait(1200);
   await shot(page, "about");
 
+
   await browser.close();
-  console.log("\n✅ All screenshots saved to docs/screenshots/");
+
+  console.log("\n✅ Done — screenshots saved to docs/screenshots/");
+  console.log("   landing.png  · pricing.png  · dashboard.png");
+  console.log("   dataset-detail.png  · insights.png  · about.png");
+  console.log("   linkedin.png  ← upload this one to LinkedIn");
 })();
