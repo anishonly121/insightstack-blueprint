@@ -7,8 +7,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### In progress
-- Custom domain configuration
+---
+
+## [2.0.0] — 2026-06-03
+
+### Added
+
+**UX & Polish**
+- **Toast notification system** (`src/components/Toaster.tsx`) — `ToastProvider` + `useToast()` hook wired to the root layout; four types (success, error, warning, info); slide-in animation, auto-dismiss after 4 s, manual close, stacking support; used across all dashboard actions
+- **FAQ accordion** — CSS `grid-template-rows: 0fr → 1fr` transition on both landing page and `/pricing`; single item open at a time; no max-height snapping
+- **Annual / monthly billing toggle** — present on landing page `#pricing` section and standalone `/pricing` page; Pro plan switches between `$9/mo` (monthly) and `$7/mo billed $84/yr` (annual); animated "Save 20%" badge slides in on toggle
+- **Drag-and-drop CSV upload** — full drag event handling (`dragover`, `dragenter`, `dragleave`, `drop`) on every dataset card; visual feedback (border + background transitions) when a file is dragged over; non-CSV files silently rejected; click-to-browse preserved
+- **Demo dataset loader** — "Try with demo data — one click" button in the empty dashboard state; creates a `Demo: Q1 2026 Operating Expenses` dataset and uploads a 47-row sample CSV with a built-in `$1,247` anomaly spike via the real API; shows loading spinner + success toast on completion
+- **Keyboard shortcuts panel** — `?` key (or `?` button in dashboard header) opens a modal listing all shortcuts; `N` focuses the new-dataset input, `←/→` paginate datasets, `Esc` closes; shortcuts disabled while typing in any `<input>` or `<textarea>`
+- **Sample CSV download** — "Download sample CSV to try it" link under the hero CTAs; generates a 47-row realistic financial dataset client-side and downloads it; same data as the demo dataset loader
+- **`src/app/robots.ts`** — Next.js Metadata API robot rules; disallows `/dashboard`, `/admin`, `/api/` from all crawlers; includes sitemap URL
+- **`src/app/sitemap.ts`** — auto-generated sitemap for all 8 public routes with correct priorities and change frequencies
+
+### Fixed
+- **HSTS header** — `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` added to `next.config.ts`; the `about` page security list was already claiming HSTS, now the header is actually present
+- **TiltCard `relative` positioning** — production-grade feature cards on the landing page had `absolute inset-0` hover-gradient overlays without a `position: relative` ancestor; overlays now correctly constrained to each card
+- **`/pricing` page "Coming soon" badge** — replaced with "Most popular" to match the landing page CTA ("Start 14-day free trial")
 
 ---
 

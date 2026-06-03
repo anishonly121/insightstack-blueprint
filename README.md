@@ -200,12 +200,25 @@ Every architectural decision has a cost. These are the ones worth discussing in 
 - Structured output: summary, top categories with reasons, anomalies, 3 recommendations
 
 ### Security
-- CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy headers
+- CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, **HSTS** headers
 - CSRF enforcement for cookie-authenticated mutations
 - JSON body hardening: `415` on wrong Content-Type, `400` on malformed JSON
 - Request correlation IDs on all requests and error responses
 - Immutable AuditLog for all sensitive actions
 - DB-backed rate limiting (no Redis required)
+
+### UX & Polish
+- **Toast notification system** — slide-in success/error/warning/info toasts with auto-dismiss, manual close, and stacking support
+- **FAQ accordion** — CSS `grid-template-rows: 0fr → 1fr` animation; no max-height snapping
+- **Annual / monthly pricing toggle** — Pro plan shows `$9/mo` or `$7/mo (billed $84/yr)` with animated "Save 20%" badge; present on both landing page and `/pricing`
+- **Drag-and-drop CSV upload** — full drag event handling with visual feedback per dataset card; click-to-browse still works
+- **Demo dataset loader** — one-click button in empty dashboard state creates a pre-populated 47-row dataset and uploads it via the real API
+- **Keyboard shortcuts panel** — press `?` anywhere on the dashboard; `N` focuses the new dataset input, `←/→` paginate, `Esc` closes
+- **Sample CSV download** — hero CTA gives visitors a 47-row realistic demo CSV to try immediately
+
+### SEO & Discoverability
+- `robots.txt` via Next.js Metadata API — blocks `/dashboard`, `/admin`, `/api/` from crawlers
+- `sitemap.xml` — all 8 public routes with correct priorities and change frequencies
 
 ### Admin Panel
 - View all users and datasets across the platform
@@ -391,15 +404,23 @@ BASE_URL=https://insightstack-peach.vercel.app npm run test:e2e
 app/
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx                    # Landing page
+│   │   ├── page.tsx                    # Landing page (hero, features, pricing, FAQ)
+│   │   ├── robots.ts                   # Auto-generated robots.txt
+│   │   ├── sitemap.ts                  # Auto-generated sitemap.xml
+│   │   ├── layout.tsx                  # Root layout with ToastProvider
 │   │   ├── login/                      # Login + register
 │   │   ├── dashboard/                  # Main dashboard + dataset detail
-│   │   ├── about/                      # About page
-│   │   ├── demo/                       # Demo walkthrough
-│   │   ├── admin/                      # Admin panel
+│   │   ├── pricing/                    # Standalone pricing page
+│   │   ├── about/                      # About page (interactive demos)
+│   │   ├── demo/                       # API walkthrough
+│   │   ├── admin/                      # Admin panel (ADMIN role only)
+│   │   ├── share/[insightId]/          # Public shareable insight page
 │   │   ├── privacy/                    # Privacy policy
 │   │   ├── terms/                      # Terms of service
 │   │   └── api/                        # All API route handlers
+│   ├── components/
+│   │   ├── LogoMark.tsx                # Animated SVG logo
+│   │   └── Toaster.tsx                 # Toast notification system (context + UI)
 │   └── lib/
 │       ├── api.ts                      # Client-side API wrapper + types
 │       ├── auth.ts                     # JWT sign/verify + middleware
