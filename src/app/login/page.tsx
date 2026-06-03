@@ -236,7 +236,24 @@ export default function LoginPage() {
             </form>
           </div>
 
-          <p className="mt-6 text-center text-xs text-[#8892A4]/50">
+          {/* Demo credentials quick-fill */}
+          <div className="mt-4 rounded-xl border border-white/[0.05] bg-white/[0.02] px-5 py-4 text-center">
+            <p className="mb-2 text-xs text-zinc-700">Just browsing? Try the demo account.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("login");
+                setEmail("demo@insightstack.app");
+                setPassword("Demo1234!");
+                setError("");
+              }}
+              className="text-xs font-semibold text-[#8892A4] transition hover:text-blue-400"
+            >
+              Fill demo credentials →
+            </button>
+          </div>
+
+          <p className="mt-4 text-center text-xs text-[#8892A4]/50">
             <Link href="/" className="transition hover:text-[#8892A4]">← Back to home</Link>
           </p>
         </div>
