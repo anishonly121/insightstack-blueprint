@@ -4,7 +4,7 @@ import { LogoMark } from "@/components/LogoMark";
 
 export const metadata: Metadata = {
   title: "How it works — InsightStack",
-  description: "A step-by-step walkthrough of InsightStack: CSV upload, auto-parsing, metrics computation, and GPT-4o AI spending analysis. See the full engineering breakdown.",
+  description: "A step-by-step walkthrough of InsightStack: CSV upload, auto-parsing, metrics computation, and custom FinanceAI spending analysis. See the full engineering breakdown.",
 };
 
 const steps = [
@@ -39,7 +39,7 @@ const steps = [
   {
     n: "05",
     title: "Generate AI insights",
-    detail: "Up to 100 transactions are PII-redacted and sent to GPT-4o-mini. The response is schema-validated with Zod. If OpenAI fails, a local fallback analysis is generated and saved.",
+    detail: "Transactions are PII-redacted, then passed to the FinanceAI engine — BM25 retrieval, linear regression, expert rules, and NLG composition all run in-process. Results are Zod-typed and saved to the database.",
     api: "POST /api/datasets/:id/insights",
     color: "#3B82F6",
   },
@@ -53,10 +53,10 @@ const steps = [
 ];
 
 const highlights = [
-  { label: "PII Redaction", desc: "Emails, phone numbers, NRICs, and long digit strings are scrubbed from transaction descriptions before any data reaches OpenAI." },
-  { label: "Graceful Fallback", desc: "If OpenAI is unavailable or returns malformed JSON, a local algorithm computes category totals and anomalies and saves them as the insight." },
-  { label: "Daily Quota", desc: "Each user has a 30-insights-per-day cap enforced via AuditLog counting, preventing runaway API spend." },
-  { label: "Cache Layer", desc: "Identical prompt hashes skip the OpenAI call entirely and return the cached insight. Metrics snapshots cache for 1 hour." },
+  { label: "PII Redaction", desc: "Emails, phone numbers, NRICs, and long digit strings are scrubbed from transaction descriptions before any processing." },
+  { label: "Zero External API", desc: "FinanceAI runs entirely in-process — BM25 retrieval, linear regression, expert rules, and NLG. No API key, no latency, no cost per call." },
+  { label: "Daily Quota", desc: "Each user has a 30-insights-per-day cap enforced via AuditLog counting." },
+  { label: "Cache Layer", desc: "Identical data hashes skip recomputation entirely and return the cached insight. Metrics snapshots cache for 1 hour." },
   { label: "CSRF Protection", desc: "Cookie-authenticated requests require a matching CSRF header. Bearer token requests bypass this (standard SPA pattern)." },
   { label: "Audit Log", desc: "Every upload, insight generation, rename, and delete writes an immutable AuditLog row with IP and user-agent metadata." },
 ];

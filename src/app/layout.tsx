@@ -6,8 +6,8 @@ import { ToastProvider } from "@/components/Toaster";
 export const metadata: Metadata = {
   title: "InsightStack — AI-Powered Finance Analytics",
   description:
-    "Upload your transaction CSV, visualise spending patterns, and generate AI-powered insights with OpenAI. Built with Next.js, PostgreSQL, and Prisma.",
-  keywords: ["finance", "analytics", "AI", "spending", "budget", "CSV", "OpenAI"],
+    "Upload your transaction CSV, visualise spending patterns, and generate AI-powered insights. Built with Next.js, PostgreSQL, Prisma, and a custom FinanceAI engine.",
+  keywords: ["finance", "analytics", "AI", "spending", "budget", "CSV", "FinanceAI"],
   openGraph: {
     title: "InsightStack — AI-Powered Finance Analytics",
     description:
@@ -27,7 +27,7 @@ const jsonLd = {
   "name": "InsightStack",
   "applicationCategory": "FinanceApplication",
   "operatingSystem": "Web",
-  "description": "AI-powered personal finance analytics. Upload any bank CSV and get GPT-4o spending insights, anomaly detection, and budget recommendations in under 60 seconds.",
+  "description": "AI-powered personal finance analytics. Upload any bank CSV and get FinanceAI spending insights, anomaly detection, and budget recommendations in under 60 seconds.",
   "url": process.env.NEXT_PUBLIC_APP_URL ?? "https://insightstack-peach.vercel.app",
   "author": {
     "@type": "Person",
@@ -42,7 +42,7 @@ const jsonLd = {
   },
   "featureList": [
     "CSV bank statement import",
-    "GPT-4o AI spending analysis",
+    "FinanceAI spending analysis",
     "Anomaly detection",
     "Budget tracking and alerts",
     "Category breakdown charts",

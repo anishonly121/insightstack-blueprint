@@ -422,7 +422,7 @@ const ACTIVITY_ITEMS = [
   { icon: "⚡", text: "287 rows parsed in 1.2 s — zero malformed cells", color: "text-blue-400" },
   { icon: "🔍", text: "$1,247 anomaly detected — unexpected AWS charge spike", color: "text-amber-400" },
   { icon: "✓",  text: "94.3% auto-categorisation accuracy across 12 datasets", color: "text-emerald-400" },
-  { icon: "💡", text: "GPT-4o: 3 unused SaaS subscriptions — cancel to save $340/mo", color: "text-violet-400" },
+  { icon: "💡", text: "FinanceAI: 3 unused SaaS subscriptions — cancel to save $340/mo", color: "text-violet-400" },
   { icon: "🛡", text: "PII redacted before AI processing — GDPR compliant by default", color: "text-cyan-400" },
   { icon: "⚠",  text: "Duplicate charge flagged: $89.99 on Jan 15 & Jan 16", color: "text-amber-400" },
   { icon: "📊", text: "$480 / month in savings identified · PDF export ready", color: "text-blue-400" },
@@ -480,8 +480,8 @@ const pricingPlans = [
 
 const stack = [
   "Next.js 16","React 19","TypeScript 5","PostgreSQL","Prisma 7",
-  "OpenAI GPT-4o","Zod","Recharts","Tailwind CSS v4","SendGrid",
-  "JWT Auth","bcrypt","PapaParse","Vercel","Rate Limiting","CSRF Protection",
+  "FinanceAI Engine","Zod","Recharts","Tailwind CSS v4","SendGrid",
+  "JWT Auth","bcrypt","PapaParse","Vercel","BM25 Retrieval","CSRF Protection",
 ];
 
 const testimonials = [
@@ -733,7 +733,7 @@ export default function Home() {
           <Reveal delay={220}>
             <p className="mx-auto mt-7 max-w-xl text-lg leading-relaxed text-[#8892A4]">
               Upload any bank CSV. InsightStack maps your spend, detects anomalies,
-              and surfaces GPT-4o recommendations — in under 60 seconds.
+              and surfaces AI-powered recommendations — in under 60 seconds.
             </p>
           </Reveal>
 
@@ -854,8 +854,8 @@ export default function Home() {
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" /></svg>
                   </div>
                   <div>
-                    <p className="font-bold text-zinc-100">GPT-4o AI Analysis</p>
-                    <p className="text-xs text-[#8892A4]">PII-redacted · structured JSON output</p>
+                    <p className="font-bold text-zinc-100">FinanceAI Analysis</p>
+                    <p className="text-xs text-[#8892A4]">Zero latency · privacy-first · no API key</p>
                   </div>
                 </div>
                 <div className="relative flex-1 overflow-hidden rounded-xl border border-white/[0.05] bg-[#020810] p-4">
@@ -937,7 +937,7 @@ export default function Home() {
             {[
               { n:"01", title:"Create your account",   body:"30-second registration. bcrypt-hashed passwords — plaintext credentials never touch our servers.", color:"bg-blue-500 shadow-[0_0_24px_rgba(59,130,246,0.4)]" },
               { n:"02", title:"Upload any financial CSV",body:"Export from your bank, accounting software, or card provider. Our parser validates every row on ingest.", color:"bg-violet-500 shadow-[0_0_24px_rgba(139,92,246,0.4)]" },
-              { n:"03", title:"Get AI-powered decisions",body:"One click. GPT-4o flags anomalies, maps categories, and surfaces the three highest-ROI actions you can take today.", color:"bg-emerald-500 shadow-[0_0_24px_rgba(16,185,129,0.4)]" },
+              { n:"03", title:"Get AI-powered decisions",body:"One click. FinanceAI flags anomalies, maps categories, and surfaces the three highest-ROI actions you can take today.", color:"bg-emerald-500 shadow-[0_0_24px_rgba(16,185,129,0.4)]" },
             ].map((s,i) => (
               <Reveal key={s.n} delay={i * 100}>
                 <div className="relative">
@@ -979,9 +979,9 @@ export default function Home() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-6 w-6 text-violet-400"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
                 ),
                 accent: "violet",
-                title: "AI that explains its work",
-                body: "GPT-4o doesn't just flag anomalies — it cites exact rows, compares prior periods, and gives plain-English rationale. PII is redacted server-side before any data leaves your environment.",
-                pills: ["GPT-4o function calling", "PII redaction", "Anomaly scoring"],
+                title: "AI built from scratch",
+                body: "FinanceAI uses BM25 retrieval, linear regression, and an expert rule engine — all running inside the app. Zero API latency, zero cost, and data never leaves your environment.",
+                pills: ["BM25 retrieval", "Expert rule engine", "Linear regression"],
               },
               {
                 icon: (
@@ -1247,7 +1247,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex flex-col items-center justify-between gap-4 border-t border-white/[0.05] pt-8 sm:flex-row">
-            <p className="text-xs text-[#8892A4]/40">© 2026 InsightStack. Built with Next.js, PostgreSQL, OpenAI & Vercel.</p>
+            <p className="text-xs text-[#8892A4]/40">© 2026 InsightStack. Built with Next.js, PostgreSQL, FinanceAI & Vercel.</p>
             <div className="flex items-center gap-4 text-xs text-[#8892A4]/40">
               <Link href="/privacy" className="transition hover:text-zinc-400">Privacy</Link>
               <Link href="/terms" className="transition hover:text-zinc-400">Terms</Link>
