@@ -136,9 +136,29 @@ function InsightCard({ insight, datasetId, datasetName }: { insight: Insight; da
           </button>
         </div>
       </div>
-      <div className="px-4 py-3">
+      <div className="px-4 pt-3 pb-2">
         <p className="text-sm leading-relaxed text-zinc-400">{insight.insightText}</p>
       </div>
+      {/* Quick-stats pills — visible in both collapsed and expanded states */}
+      {json && (json.anomalies?.length > 0 || json.topSpendingCategories?.[0] || json.recommendations?.length > 0) && (
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
+          {(json.topSpendingCategories?.[0]) && (
+            <span className="flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold text-blue-400 ring-1 ring-blue-500/20">
+              ↑ {json.topSpendingCategories[0].category}
+            </span>
+          )}
+          {json.anomalies?.length > 0 && (
+            <span className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-400 ring-1 ring-amber-500/20">
+              ⚠ {json.anomalies.length} anomal{json.anomalies.length === 1 ? "y" : "ies"}
+            </span>
+          )}
+          {json.recommendations?.length > 0 && (
+            <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-400 ring-1 ring-emerald-500/20">
+              💡 {json.recommendations.length} recommendations
+            </span>
+          )}
+        </div>
+      )}
       {expanded && json && (
         <div className="space-y-5 border-t border-white/5 px-4 pb-4">
           {json.topSpendingCategories?.length > 0 && (

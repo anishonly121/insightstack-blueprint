@@ -12,8 +12,9 @@ const createDatasetSchema = z.object({
 const listDatasetQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
-  sort: z.enum(["createdAt"]).default("createdAt"),
+  sort: z.enum(["createdAt", "name"]).default("createdAt"),
   order: z.enum(["asc", "desc"]).default("desc"),
+  name: z.string().trim().optional(),
 });
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -118,6 +119,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       pageSize: searchParams.get("pageSize") ?? undefined,
       sort: searchParams.get("sort") ?? undefined,
       order: searchParams.get("order") ?? undefined,
+      name: searchParams.get("name") ?? undefined,
     });
 
     if (!parsedQuery.success) {
@@ -129,8 +131,11 @@ export async function GET(req: Request): Promise<NextResponse> {
       );
     }
 
-    const { page, pageSize, sort, order } = parsedQuery.data;
-    const where = { userId: user.id };
+    const { page, pageSize, sort, order, name } = parsedQuery.data;
+    const where = {
+      userId: user.id,
+      ...(name ? { name: { contains: name, mode: "insensitive" as const } } : {}),
+    };
     const [total, datasets] = await Promise.all([
       prisma.dataset.count({ where }),
       prisma.dataset.findMany({

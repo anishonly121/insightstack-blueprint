@@ -346,6 +346,15 @@ export default function DashboardPage() {
     return show;
   });
 
+  const [datasetSearch, setDatasetSearch] = useState("");
+  const [datasetSort, setDatasetSort] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
+
+  // Use refs so loadDatasets always reads current search/sort without stale closures
+  const searchRef = useRef(datasetSearch);
+  const sortRef = useRef(datasetSort);
+  searchRef.current = datasetSearch;
+  sortRef.current = datasetSort;
+
   const hasDatasets = useMemo(() => datasets.length > 0, [datasets.length]);
 
   const setAction = (datasetId: string, patch: Partial<ActionState>) => {
@@ -358,10 +367,24 @@ export default function DashboardPage() {
     });
   };
 
+  const SORT_CONFIG = {
+    newest: { sort: "createdAt" as const, order: "desc" as const },
+    oldest: { sort: "createdAt" as const, order: "asc" as const },
+    "a-z":  { sort: "name" as const,      order: "asc" as const  },
+    "z-a":  { sort: "name" as const,      order: "desc" as const },
+  };
+
   const loadDatasets = async (page = 1) => {
     setPageError("");
+    const cfg = SORT_CONFIG[sortRef.current] ?? SORT_CONFIG.newest;
     try {
-      const res = await api.listDatasets({ page, pageSize: meta.pageSize, sort: "createdAt", order: "desc" });
+      const res = await api.listDatasets({
+        page,
+        pageSize: meta.pageSize,
+        sort: cfg.sort,
+        order: cfg.order,
+        name: searchRef.current || undefined,
+      });
       setDatasets(res.data);
       setMeta(res.meta);
     } catch (err) {
@@ -380,6 +403,13 @@ export default function DashboardPage() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
+  // Re-fetch on search or sort change (debounced 300ms for search)
+  useEffect(() => {
+    const timer = setTimeout(() => void loadDatasets(1), datasetSearch ? 300 : 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datasetSearch, datasetSort]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -714,9 +744,49 @@ export default function DashboardPage() {
 
         {/* ── Datasets list ──────────────────────────────────────────────── */}
         <section className="rounded-xl border border-white/6 bg-zinc-900 shadow-sm">
-          <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
+          <div className="flex flex-wrap items-center gap-3 border-b border-white/5 px-5 py-4">
             <h2 className="font-bold text-white">Your Datasets</h2>
-            {hasDatasets && <span className="text-xs text-zinc-600">{meta.total} total</span>}
+            <span className="text-xs text-zinc-600">
+              {datasetSearch ? `${meta.total} match${meta.total !== 1 ? "es" : ""}` : `${meta.total} total`}
+            </span>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {/* Search */}
+              <div className="relative">
+                <svg className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+                <input
+                  type="search"
+                  placeholder="Search datasets…"
+                  value={datasetSearch}
+                  onChange={(e) => setDatasetSearch(e.target.value)}
+                  className="w-44 rounded-lg border border-white/8 bg-zinc-800 py-1.5 pl-8 pr-3 text-xs text-white placeholder-zinc-600 transition focus:border-blue-500/40 focus:outline-none focus:ring-2 focus:ring-blue-500/15"
+                />
+                {datasetSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setDatasetSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300"
+                    aria-label="Clear search"
+                  >
+                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {/* Sort */}
+              <select
+                value={datasetSort}
+                onChange={(e) => setDatasetSort(e.target.value as typeof datasetSort)}
+                className="rounded-lg border border-white/8 bg-zinc-800 py-1.5 pl-3 pr-7 text-xs text-zinc-300 transition focus:border-blue-500/40 focus:outline-none appearance-none"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="a-z">Name A → Z</option>
+                <option value="z-a">Name Z → A</option>
+              </select>
+            </div>
           </div>
 
           {pageLoading ? (
@@ -785,6 +855,20 @@ export default function DashboardPage() {
                               {statusCfg.label}
                             </span>
                             <span className="text-xs text-zinc-600">{dataset.rowCount.toLocaleString()} rows</span>
+                            <span className="text-xs text-zinc-700">·</span>
+                            <span className="text-xs text-zinc-700" title={new Date(dataset.createdAt).toLocaleString()}>
+                              {(() => {
+                                const diff = Date.now() - new Date(dataset.createdAt).getTime();
+                                const mins = Math.floor(diff / 60_000);
+                                const hrs = Math.floor(diff / 3_600_000);
+                                const days = Math.floor(diff / 86_400_000);
+                                if (mins < 1) return "just now";
+                                if (hrs < 1) return `${mins}m ago`;
+                                if (days < 1) return `${hrs}h ago`;
+                                if (days < 30) return `${days}d ago`;
+                                return new Date(dataset.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                              })()}
+                            </span>
                             {dataset.originalFilename && (
                               <span className="max-w-[200px] truncate text-xs text-zinc-600">{dataset.originalFilename}</span>
                             )}

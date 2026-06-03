@@ -249,14 +249,16 @@ export const api = {
   listDatasets: (params?: {
     page?: number;
     pageSize?: number;
-    sort?: "createdAt";
+    sort?: "createdAt" | "name";
     order?: "asc" | "desc";
+    name?: string;
   }) => {
     const query = new URLSearchParams();
     if (params?.page) query.set("page", String(params.page));
     if (params?.pageSize) query.set("pageSize", String(params.pageSize));
     if (params?.sort) query.set("sort", params.sort);
     if (params?.order) query.set("order", params.order);
+    if (params?.name) query.set("name", params.name);
     const path = query.size > 0 ? `/api/datasets?${query.toString()}` : "/api/datasets";
     return request<{ data: Dataset[]; meta: PaginatedMeta }>(path);
   },
