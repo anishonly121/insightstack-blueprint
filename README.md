@@ -6,10 +6,10 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai&logoColor=white)
+![FinanceAI](https://img.shields.io/badge/FinanceAI-Custom%20Engine-6366f1?logo=sparkles&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e)
 
-InsightStack is a **production-grade full-stack SaaS** that turns raw CSV bank exports into a visual financial dashboard with GPT-4o spending insights. Built end-to-end with real auth, real payments, real AI, 29 integration tests and a Playwright E2E suite — no mocks.
+InsightStack is a **production-grade full-stack SaaS** that turns raw CSV bank exports into a visual financial dashboard with AI-powered spending insights. The AI layer is a custom-built engine — BM25 information retrieval, linear regression, an expert rule system, and intent-based chat — with zero external AI API dependency. Built end-to-end with real auth, real payments, 29 integration tests and a Playwright E2E suite — no mocks.
 
 **[Live Demo →](https://insightstack-peach.vercel.app)** · **[How It Works](https://insightstack-peach.vercel.app/demo)** · **[Changelog](https://insightstack-peach.vercel.app/changelog)**
 
@@ -23,7 +23,7 @@ Most finance apps that offer AI insights require you to connect your bank accoun
 
 InsightStack takes the opposite approach: export a CSV from your bank (something every bank supports, no credentials required), upload it, and get the same quality analysis. Your banking credentials never leave your bank. Your transaction data only lives in your own database.
 
-That constraint forced better engineering. A parser that handles any CSV format. A metrics engine that computes everything server-side before AI sees any data. A pipeline designed to work even when OpenAI is unavailable — because I built it knowing the fallback would run.
+That constraint forced better engineering. A parser that handles any CSV format. A metrics engine that computes everything server-side. And instead of calling OpenAI, I built the entire AI layer from scratch — BM25 retrieval (the same algorithm powering Elasticsearch), linear regression for trend detection, the Herfindahl-Hirschman Index for spending concentration, and an intent-based chat engine. Zero API cost, zero latency, data never leaves the server.
 
 ---
 
@@ -64,7 +64,7 @@ That constraint forced better engineering. A parser that handles any CSV format.
 | 3. Upload CSV | Parse, validate, and store transaction rows in PostgreSQL |
 | 4. View Dashboard | Income vs. expenses, savings rate, monthly bar chart, category pie chart |
 | 5. Search Transactions | Filter by category or search description with server-side pagination |
-| 6. Generate AI Insights | GPT-4o analyses spending — returns summary, anomalies, top categories, 3 recommendations |
+| 6. Generate AI Insights | FinanceAI analyses spending — returns summary, anomalies, top categories, 3 recommendations |
 
 ---
 
@@ -88,12 +88,13 @@ flowchart TD
         DB[("User · Dataset · Transaction\nMetricSnapshot · Insight\nAuditLog · RateLimitBucket")]
     end
 
-    subgraph AI["AI Pipeline"]
+    subgraph AI["FinanceAI Engine (runs in-process)"]
         REDACT["PII Redactor\nemail · phone · NRIC · digits"]
-        HASH["Prompt Hash\nskip if cached"]
-        GPT["OpenAI GPT-4o"]
-        ZOD["Zod Schema Validator"]
-        FALLBACK["Local Fallback Analyser"]
+        HASH["Cache Key\nskip if cached"]
+        BM25["BM25 Retrieval\nfinancial knowledge base"]
+        RULES["Expert Rule Engine\n10 typed financial rules"]
+        STAT["Statistical ML\nLinear regression · HHI · volatility"]
+        NLG["NLG Composer\nmulti-template narrative generation"]
     end
 
     subgraph Email["SendGrid"]
@@ -106,11 +107,13 @@ flowchart TD
     API <-->|Prisma ORM| DB
     API --> REDACT
     REDACT --> HASH
-    HASH -->|cache miss| GPT
-    GPT --> ZOD
-    ZOD -->|valid| API
-    ZOD -->|invalid / timeout| FALLBACK
-    FALLBACK --> API
+    HASH -->|cache miss| BM25
+    HASH -->|cache miss| RULES
+    HASH -->|cache miss| STAT
+    BM25 --> NLG
+    RULES --> NLG
+    STAT --> NLG
+    NLG --> API
     API --> SG
 ```
 
@@ -120,7 +123,7 @@ flowchart TD
 
 These are the design decisions that go beyond a typical tutorial project:
 
-**AI pipeline resilience** — Before hitting OpenAI, transactions are PII-redacted (email, phone, long digit strings), capped at 100 rows / 50k characters, and the prompt is hashed. Identical data reuses the cached result, skipping the API call entirely. If OpenAI returns malformed JSON or is unavailable, a local fallback analyser runs against the same data — the user always gets a response.
+**Custom AI engine (no external API)** — The entire AI layer (`src/lib/ai/`) is built from scratch. BM25 (the probabilistic retrieval algorithm powering Elasticsearch) retrieves the most contextually relevant financial knowledge documents for each user's situation. Linear regression detects spending trends. The Herfindahl-Hirschman Index (used by the DOJ for antitrust) measures spending concentration. A typed expert rule engine evaluates 10 financial rules with confidence scores. An NLG composer selects from multiple narrative templates based on financial health profile. Zero external API calls, zero latency, data never leaves the server.
 
 **MetricSnapshot caching** — Analytics are computed server-side once and stored as a `MetricSnapshot` row in PostgreSQL with a 1-hour TTL. Subsequent dashboard loads read directly from the snapshot instead of re-aggregating thousands of transaction rows on every request.
 
@@ -132,7 +135,7 @@ These are the design decisions that go beyond a typical tutorial project:
 
 **Immutable audit log** — Every sensitive action (upload, rename, delete, insight generate) appends a row to `AuditLog`. Rows are never updated or deleted. The daily insight quota is enforced by counting AuditLog entries rather than a mutable counter that could drift under concurrent requests.
 
-**Zod on AI output boundaries** — GPT-4o returns freeform JSON. Schema-validating every response means a malformed reply triggers the local fallback, never a runtime crash. The same Zod schemas are used for both request validation and AI response validation.
+**Typed AI output boundaries** — The FinanceAI engine returns a fully-typed `EngineOutput` object. Because the engine runs in-process, there is no network boundary, no schema mismatch, and no rate limit. The same Zod schemas are used for both HTTP request validation and AI output validation where applicable.
 
 **Structured JSON logging** — All API-layer errors and key events (`INSIGHTS_PROMPT_STATS`, `RATE_LIMIT_CLEANUP_ERROR`, etc.) are emitted via a typed logger that outputs JSON in production (for log aggregators) and human-readable lines in development. Correlation IDs flow through every log entry.
 
@@ -156,7 +159,7 @@ Every architectural decision has a cost. These are the ones worth discussing in 
 
 **Daily insight quota via AuditLog counting** — Rather than a mutable `insightCount` column that could go wrong under concurrent requests, the quota is enforced by counting immutable AuditLog rows. The count is always accurate; there's no race condition; the log is a useful audit trail regardless.
 
-**Zod at the AI response boundary** — GPT-4o returns freeform JSON. Rather than trusting it, every response is validated against a strict Zod schema. A malformed response triggers the local fallback — the user always gets an answer, even if OpenAI is having a bad day.
+**Structured AI output** — The FinanceAI engine always returns a typed `EngineOutput` object validated by TypeScript. Because the engine runs in-process rather than calling an external API, there is no network failure mode, no schema mismatch, and no rate limit. The output is deterministic: identical input always produces the same analysis.
 
 ---
 
@@ -172,7 +175,7 @@ Every architectural decision has a cost. These are the ones worth discussing in 
 | CSV Parsing | Papa Parse |
 | Charts | Recharts (Pie, Bar, Line) |
 | Styling | Tailwind CSS v4 |
-| AI | OpenAI GPT-4o |
+| AI | FinanceAI (custom engine — BM25, linear regression, HHI, expert rules, NLG) |
 | Email | SendGrid (password reset) |
 | Testing | Node.js built-in test runner (29 integration tests) |
 | CI | GitHub Actions (lint + type-check + build + migrate + 29 integration tests) |
@@ -201,13 +204,16 @@ Every architectural decision has a cost. These are the ones worth discussing in 
 - Three charts: category pie, monthly income/expense bar, net savings trend line
 - One-click CSV export of filtered transactions
 
-### AI Insights
-- PII redaction before sending to OpenAI (email, phone, NRIC, long digit strings)
-- Payload capped at 100 transactions / 50k characters
-- Response schema-validated with Zod — local fallback analysis if OpenAI fails
-- Results cached by prompt hash — identical data skips the API call
+### AI Insights (FinanceAI — no external API)
+- **BM25 retrieval** — Elasticsearch-class probabilistic ranking over a 38-document financial knowledge base; retrieves the most contextually relevant advice per user situation
+- **Linear regression** — OLS slope over monthly expense data for trend detection (increasing / decreasing / stable)
+- **Herfindahl-Hirschman Index** — measures spending concentration; adapted from the DOJ antitrust metric
+- **Expert rule engine** — 10 typed financial rules (deficit, savings rate, concentration risk, anomaly count, trend direction) each with a confidence score
+- **NLG composer** — 3 summary templates selected by financial health profile; context-aware category and anomaly reasons
+- **Intent-based chat** — keyword-scored intent detection with referential pronoun resolution; answers questions about categories, savings rate, anomalies, monthly trends
+- Results cached by data hash — identical input skips recomputation
 - Daily quota of 30 insights per user (enforced via AuditLog counting)
-- Structured output: summary, top categories with reasons, anomalies, 3 recommendations
+- Zero API cost, zero external latency, data never leaves the server
 
 ### Security
 - CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, **HSTS** headers
@@ -318,7 +324,6 @@ DIRECT_URL="postgresql://<user>:<pass>@<host>.neon.tech/<db>?sslmode=require"
 JWT_SECRET="replace-with-a-32-char-minimum-random-string"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_NAME="InsightStack"
-OPENAI_API_KEY="sk-..."
 SENDGRID_API_KEY=""
 SENDGRID_FROM_EMAIL="your-verified-sender@example.com"
 SENDGRID_TEMPLATE_RESET_PASSWORD="d-..."
@@ -432,6 +437,16 @@ app/
 │   │   ├── LogoMark.tsx                # Animated SVG logo
 │   │   └── Toaster.tsx                 # Toast notification system (context + UI)
 │   └── lib/
+│       ├── ai/                         # FinanceAI engine (zero external API)
+│       │   ├── index.ts                #   Public facade — generateInsights, streamInsightSummary, chat
+│       │   ├── engine.ts               #   Orchestrator — runs all strategies, composes output
+│       │   ├── chat.ts                 #   Intent-based Q&A with referential resolution
+│       │   ├── types.ts                #   Shared types (Finding, EngineOutput, ChatContext)
+│       │   ├── knowledge/base.ts       #   38-document financial knowledge base
+│       │   ├── strategies/bm25.ts      #   BM25 probabilistic retrieval (Elasticsearch algorithm)
+│       │   ├── strategies/statistical.ts #  Linear regression, HHI, monthly volatility
+│       │   ├── strategies/rules.ts     #   10 expert financial rules with confidence scores
+│       │   └── nlg/composer.ts         #   Multi-template natural language generation
 │       ├── api.ts                      # Client-side API wrapper + types
 │       ├── auth.ts                     # JWT sign/verify + middleware
 │       ├── prisma.ts                   # Prisma client singleton

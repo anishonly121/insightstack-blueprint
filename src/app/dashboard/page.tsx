@@ -488,7 +488,7 @@ export default function DashboardPage() {
 
   const onGenerateInsights = async (datasetId: string) => {
     setAction(datasetId, { insightLoading: true, error: "" });
-    toast({ type: "info", title: "Generating insights…", message: "GPT-4o is analysing your transactions.", duration: 8000 });
+    toast({ type: "info", title: "Generating insights…", message: "FinanceAI is analysing your transactions.", duration: 8000 });
     try {
       await api.generateInsights(datasetId);
       await loadDatasets(meta.page);

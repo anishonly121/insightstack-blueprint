@@ -57,7 +57,7 @@ export default function Image() {
 
           {/* Subtitle */}
           <div style={{ fontSize: 22, color: "#8892A4", lineHeight: 1.5, marginBottom: 52 }}>
-            Upload any bank CSV · Map spend · Get GPT-4o recommendations in 60 seconds
+            Upload any bank CSV · Map spend · Get AI-powered recommendations in 60 seconds
           </div>
 
           {/* Stats */}
@@ -65,7 +65,7 @@ export default function Image() {
             {[
               { val: "87%", label: "less time on reviews" },
               { val: "60s",  label: "CSV to AI insight"    },
-              { val: "GPT-4o", label: "AI engine"          },
+              { val: "FinanceAI", label: "custom engine"    },
               { val: "100%", label: "TypeScript"           },
             ].map((s) => (
               <div

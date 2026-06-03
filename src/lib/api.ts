@@ -39,7 +39,6 @@ export type InsightJson = {
     reason: string;
   }>;
   recommendations: [string, string, string];
-  openaiError?: string;
 };
 
 export type Insight = {

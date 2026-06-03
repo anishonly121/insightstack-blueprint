@@ -38,7 +38,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="mb-3 text-lg font-bold text-white">3. AI processing & PII</h2>
-            <p className="leading-relaxed">Before any transaction data is sent to OpenAI for analysis, personally identifiable information (names, account numbers, reference codes) is redacted server-side. We do not share identifiable financial data with third parties for advertising or profiling purposes.</p>
+            <p className="leading-relaxed">Before any transaction data is processed by the FinanceAI engine, personally identifiable information (names, account numbers, reference codes) is redacted server-side. All AI analysis runs in-process — your data is never sent to any external AI service. We do not share identifiable financial data with third parties for advertising or profiling purposes.</p>
           </section>
 
           <section>

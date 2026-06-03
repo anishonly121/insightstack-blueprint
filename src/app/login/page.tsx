@@ -90,14 +90,14 @@ export default function LoginPage() {
             <span className="text-gradient-blue">that actually pays off.</span>&rdquo;
           </blockquote>
           <p className="text-[#8892A4]">
-            Upload a CSV · Map your spending · Generate GPT-4o recommendations
+            Upload a CSV · Map your spending · Generate AI recommendations
           </p>
 
           <div className="mt-10 grid grid-cols-3 gap-4">
             {[
               { val: "60 s", label: "CSV to insight" },
               { val: "$2.4k", label: "Avg error caught" },
-              { val: "GPT-4o", label: "AI Engine" },
+              { val: "Custom", label: "AI Engine" },
             ].map((s) => (
               <div key={s.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
                 <p className="text-xl font-black text-blue-400">{s.val}</p>
@@ -107,7 +107,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="relative text-xs text-[#8892A4]/50">Built with Next.js · PostgreSQL · OpenAI · Deployed on Vercel</p>
+        <p className="relative text-xs text-[#8892A4]/50">Built with Next.js · PostgreSQL · FinanceAI · Deployed on Vercel</p>
       </div>
 
       {/* Right panel — form */}

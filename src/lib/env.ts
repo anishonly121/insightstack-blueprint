@@ -11,7 +11,6 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   DIRECT_URL: z.string().min(1, "DIRECT_URL is required"),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
-  OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   NEXT_PUBLIC_APP_URL: z.string().min(1, "NEXT_PUBLIC_APP_URL is required"),
   SENDGRID_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   SENDGRID_FROM_EMAIL: z.preprocess(emptyToUndefined, z.string().min(1).optional()),

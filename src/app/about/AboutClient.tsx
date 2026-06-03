@@ -36,8 +36,8 @@ const PIPELINE = [
   {
     icon: "✦",
     label: "AI Analysis",
-    sub: "GPT-4o-mini with guardrails",
-    detail: "Transactions are PII-redacted (email, phone, NRIC), chunked to 50k chars, and sent with a structured prompt. Every response is Zod-validated before storage. Local fallback if OpenAI fails.",
+    sub: "Custom engine — BM25 · rules · regression",
+    detail: "Transactions are PII-redacted, then analysed by FinanceAI — BM25 retrieval over a financial knowledge base, linear regression for trends, HHI for concentration, and 10 expert rules. All in-process, zero external API.",
     color: "#8B5CF6",
     glow: "rgba(139,92,246,0.25)",
   },
@@ -70,7 +70,7 @@ const SYSTEMS = [
   { tag: "Security",      tagCls: "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20",       accent: "#3B82F6", title: "JWT Auth System",        desc: "Register, login, password reset via SendGrid, role-based access control. Bcrypt-hashed passwords, dual-auth via Bearer token and HttpOnly cookie." },
   { tag: "Data",          tagCls: "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20", accent: "#10B981", title: "CSV Ingestion Pipeline",  desc: "Upload any bank export. PapaParse validates every row, rejected rows are reported, accepted rows inserted atomically via Prisma transactions." },
   { tag: "Analytics",     tagCls: "bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20",       accent: "#06B6D4", title: "Metrics Engine",          desc: "Server-side computation of income, expenses, savings rate, category totals, and monthly breakdown. Cached as MetricSnapshot with a 1-hour TTL." },
-  { tag: "AI",            tagCls: "bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20", accent: "#8B5CF6", title: "AI Insights Pipeline",    desc: "Transactions are PII-redacted, chunked, and sent to GPT-4o-mini. Responses are Zod-validated. Fallback local analysis runs if OpenAI is unavailable." },
+  { tag: "AI",            tagCls: "bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20", accent: "#8B5CF6", title: "FinanceAI Engine",          desc: "Custom-built: BM25 retrieval (Elasticsearch algorithm), linear regression for trend detection, Herfindahl-Hirschman Index for concentration, 10 expert rules, NLG composer. Zero external API." },
   { tag: "Production",    tagCls: "bg-red-500/10 text-red-400 ring-1 ring-red-500/20",          accent: "#EF4444", title: "Rate Limiting & Quotas",  desc: "Per-user and per-IP limits on every mutating endpoint, backed by a PostgreSQL RateLimitBucket table with serializable transactions." },
   { tag: "Observability", tagCls: "bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20", accent: "#F97316", title: "Audit Logging",           desc: "Every significant action writes an immutable AuditLog row with IP, user-agent, and entity reference. Structured JSON logging in production." },
 ];
@@ -80,7 +80,7 @@ const STACK = [
   { cat: "Styling",     items: ["Tailwind CSS v4", "Recharts", "Framer-style CSS"] },
   { cat: "Backend",     items: ["Next.js Route Handlers", "Prisma 7", "Zod"] },
   { cat: "Database",    items: ["PostgreSQL (Neon)", "Prisma Migrations"] },
-  { cat: "AI",          items: ["OpenAI GPT-4o-mini", "Structured prompts", "Local fallback"] },
+  { cat: "AI",          items: ["FinanceAI (custom)", "BM25 retrieval", "Expert rule engine", "Linear regression"] },
   { cat: "Auth",        items: ["JWT", "bcrypt", "HttpOnly cookies"] },
   { cat: "Security",    items: ["CSRF", "Rate limiting", "CSP headers", "HSTS"] },
   { cat: "Email",       items: ["SendGrid", "Password reset flow"] },
@@ -543,13 +543,13 @@ export function AboutClient() {
               },
               {
                 n: "03",
-                decision: "Zod validation on every AI response",
-                reason: "GPT-4o-mini returns freeform JSON. Schema-validating every response means a malformed reply triggers the local fallback instantly — no runtime crashes surface to the user.",
+                decision: "Custom AI engine over third-party API",
+                reason: "Building FinanceAI from scratch (BM25, linear regression, HHI, expert rules) took more work than calling OpenAI. The payoff: zero API cost, zero latency, zero vendor lock-in, and full explainability. For a portfolio, 'I built the AI' is a stronger signal than 'I called ChatGPT.'",
               },
               {
                 n: "04",
                 decision: "MetricSnapshot caching at the database layer",
-                reason: "Aggregation queries run once per hour per dataset, not on every page load. This keeps response times fast and OpenAI API costs predictable regardless of traffic spikes.",
+                reason: "Aggregation queries run once per hour per dataset, not on every page load. This keeps response times fast regardless of traffic spikes. Insight results are also cached 24 hours by data hash.",
               },
             ].map((d, i) => (
               <Reveal key={d.n} delay={i * 60}>
