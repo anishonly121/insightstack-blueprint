@@ -21,6 +21,36 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "InsightStack",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "description": "AI-powered personal finance analytics. Upload any bank CSV and get GPT-4o spending insights, anomaly detection, and budget recommendations in under 60 seconds.",
+  "url": process.env.NEXT_PUBLIC_APP_URL ?? "https://insightstack-peach.vercel.app",
+  "author": {
+    "@type": "Person",
+    "name": "Anish Bhole",
+    "url": "https://www.linkedin.com/in/anishbhole/"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+    "description": "Free plan available. Pro plan at $9/month."
+  },
+  "featureList": [
+    "CSV bank statement import",
+    "GPT-4o AI spending analysis",
+    "Anomaly detection",
+    "Budget tracking and alerts",
+    "Category breakdown charts",
+    "Monthly trend analysis",
+    "Shareable insight reports"
+  ]
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,6 +58,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         className="antialiased"
         style={

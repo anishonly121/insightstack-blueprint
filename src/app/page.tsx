@@ -1239,6 +1239,7 @@ export default function Home() {
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[#8892A4]/50">Company</p>
                 <div className="flex flex-col gap-2 text-[#8892A4]">
                   <Link href="/about" className="transition hover:text-white">About</Link>
+                  <Link href="/changelog" className="transition hover:text-white">Changelog</Link>
                   <a href="mailto:bholeanish3@gmail.com" className="transition hover:text-white">Contact</a>
                   <a href="https://github.com/anishonly121/insightstack-blueprint" target="_blank" rel="noopener noreferrer" className="transition hover:text-white">GitHub ↗</a>
                 </div>

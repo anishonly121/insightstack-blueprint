@@ -6,6 +6,23 @@ import { useRouter } from "next/navigation";
 import { api, setToken } from "@/lib/api";
 import { LogoMark } from "@/components/LogoMark";
 
+function getPasswordStrength(pwd: string): {
+  level: 0 | 1 | 2 | 3;
+  label: string;
+  barColor: string;
+  width: string;
+} {
+  if (!pwd) return { level: 0, label: "", barColor: "", width: "0%" };
+  const hasUpper   = /[A-Z]/.test(pwd);
+  const hasLower   = /[a-z]/.test(pwd);
+  const hasNumber  = /[0-9]/.test(pwd);
+  const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+  const variety = [hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+  if (pwd.length < 8 || variety < 2) return { level: 1, label: "Weak",   barColor: "bg-red-500",     width: "33%"  };
+  if (pwd.length < 12 || variety < 3) return { level: 2, label: "Good",   barColor: "bg-amber-400",   width: "66%"  };
+  return                               { level: 3, label: "Strong", barColor: "bg-emerald-400", width: "100%" };
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -169,6 +186,25 @@ export default function LoginPage() {
                   required
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
                 />
+                {mode === "register" && password && (() => {
+                  const s = getPasswordStrength(password);
+                  return (
+                    <div className="mt-2">
+                      <div className="h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${s.barColor}`}
+                          style={{ width: s.width }}
+                        />
+                      </div>
+                      <p className={`mt-1 text-right text-[10px] font-semibold ${
+                        s.level === 1 ? "text-red-400" :
+                        s.level === 2 ? "text-amber-400" : "text-emerald-400"
+                      }`}>
+                        {s.label}
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
 
               {error && (
