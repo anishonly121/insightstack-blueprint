@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import {
   api, exportTransactionsToCsv, getToken,
-  type Budget, type DatasetDetail, type Insight, type InsightJson,
+  type Budget, type DatasetDetail, type Insight, type InsightFinding, type InsightJson,
   type MetricsJson, type PaginatedMeta, type QuotaInfo, type Transaction,
 } from "@/lib/api";
 
@@ -55,9 +55,49 @@ function SummaryCard({ label, value, sub, color, accentColor }: {
   );
 }
 
+const GRADE_COLOR: Record<string, string> = {
+  excellent: "#10B981",
+  good: "#3B82F6",
+  fair: "#F59E0B",
+  poor: "#F97316",
+  critical: "#EF4444",
+};
+
+function HealthScoreRing({ score, grade }: { score: number; grade: string }) {
+  const r = 34;
+  const sw = 5;
+  const nr = r - sw / 2;
+  const circ = 2 * Math.PI * nr;
+  const fill = (score / 100) * circ;
+  const color = GRADE_COLOR[grade] ?? "#3B82F6";
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative" style={{ width: r * 2, height: r * 2 }}>
+        <svg width={r * 2} height={r * 2} className="-rotate-90" style={{ display: "block" }}>
+          <circle cx={r} cy={r} r={nr} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={sw} />
+          <circle
+            cx={r} cy={r} r={nr} fill="none"
+            stroke={color} strokeWidth={sw}
+            strokeDasharray={`${fill} ${circ}`}
+            strokeLinecap="round"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-base font-black leading-none" style={{ color }}>{score}</span>
+          <span className="text-[8px] font-semibold text-zinc-600 leading-none mt-0.5">/100</span>
+        </div>
+      </div>
+      <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color }}>
+        {grade}
+      </span>
+    </div>
+  );
+}
+
 function InsightCard({ insight, datasetId, datasetName }: { insight: Insight; datasetId: string; datasetName: string }) {
   const json = insight.insightJson as InsightJson | null;
   const [expanded, setExpanded] = useState(false);
+  const [xaiOpen, setXaiOpen] = useState(false);
   const [shared, setShared] = useState(insight.shared ?? false);
   const [shareUrl, setShareUrl] = useState<string | null>(
     insight.shared ? `${typeof window !== "undefined" ? window.location.origin : ""}/share/${insight.id}` : null,
@@ -102,6 +142,11 @@ function InsightCard({ insight, datasetId, datasetName }: { insight: Insight; da
           </div>
           <p className="text-xs text-zinc-500">
             {new Date(insight.createdAt).toLocaleString()} · <span className="font-mono text-cyan-400">{insight.model}</span>
+            {json?.confidence != null && (
+              <span className="ml-2 rounded-full bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-400 ring-1 ring-cyan-500/20">
+                {Math.round(json.confidence * 100)}% conf
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -136,6 +181,56 @@ function InsightCard({ insight, datasetId, datasetName }: { insight: Insight; da
           </button>
         </div>
       </div>
+      {/* Health score + forecast strip */}
+      {json?.healthScore && (
+        <div className="flex items-center gap-5 border-b border-white/5 px-4 py-3">
+          <HealthScoreRing score={json.healthScore.score} grade={json.healthScore.grade} />
+          <div className="flex flex-1 flex-wrap gap-x-6 gap-y-2">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Health Score</p>
+              <p className="text-sm font-black text-zinc-200">
+                {json.healthScore.score}/100
+                <span className="ml-1.5 text-xs font-normal text-zinc-500 capitalize">({json.healthScore.grade})</span>
+              </p>
+            </div>
+            {json.forecast && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Next Month Forecast</p>
+                <p className="text-sm font-black text-zinc-200">
+                  {money(json.forecast.predicted)}
+                  <span className="ml-1.5 text-xs font-normal text-zinc-500">
+                    ±{money(json.forecast.upper - json.forecast.predicted)} 95% CI
+                  </span>
+                </p>
+                <p className="text-[10px] text-zinc-600">{json.forecast.basisMonths}-month basis</p>
+              </div>
+            )}
+            {json.healthScore.breakdown && (
+              <div className="hidden sm:block">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Score Breakdown</p>
+                <div className="mt-0.5 flex gap-2">
+                  {[
+                    { label: "Savings", v: json.healthScore.breakdown.savingsComponent },
+                    { label: "Diversif.", v: json.healthScore.breakdown.concentrationComponent },
+                    { label: "Trend", v: json.healthScore.breakdown.trendComponent },
+                    { label: "Anomalies", v: json.healthScore.breakdown.anomalyComponent },
+                  ].map(({ label, v }) => (
+                    <div key={label} className="flex flex-col items-center gap-0.5">
+                      <div className="h-6 w-4 rounded-sm bg-zinc-800 overflow-hidden flex items-end">
+                        <div
+                          className="w-full rounded-sm bg-blue-500/50"
+                          style={{ height: `${v}%` }}
+                        />
+                      </div>
+                      <span className="text-[8px] text-zinc-600">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <div className="px-4 pt-3 pb-2">
         <p className="text-sm leading-relaxed text-zinc-400">{insight.insightText}</p>
       </div>
@@ -195,7 +290,14 @@ function InsightCard({ insight, datasetId, datasetName }: { insight: Insight; da
                         <p className="text-sm font-semibold text-zinc-100">{a.description}</p>
                         <p className="text-xs text-zinc-500">{a.date.slice(0, 10)} · {a.category}</p>
                       </div>
-                      <span className="shrink-0 font-mono text-sm font-black text-amber-400">{money(a.amount)}</span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="shrink-0 font-mono text-sm font-black text-amber-400">{money(a.amount)}</span>
+                        {a.zScore != null && (
+                          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-300 ring-1 ring-amber-500/30">
+                            {a.zScore.toFixed(1)}σ
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="mt-1.5 text-xs text-amber-500/70">{a.reason}</p>
                   </div>
@@ -214,6 +316,57 @@ function InsightCard({ insight, datasetId, datasetName }: { insight: Insight; da
                   </li>
                 ))}
               </ol>
+            </div>
+          )}
+          {/* XAI — Explainable AI panel */}
+          {json.findings && json.findings.length > 0 && (
+            <div className="rounded-xl border border-white/6 bg-zinc-800/40">
+              <button
+                type="button"
+                onClick={() => setXaiOpen(v => !v)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <svg className="h-3.5 w-3.5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15M14.25 3.104c.251.023.501.05.75.082M19.8 15l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.607L5 14.5m14.8.5-1.175 2.955A48.677 48.677 0 0112 18.75a48.677 48.677 0 00-6.625-.295L5 14.5m0 0-1.57.393" />
+                  </svg>
+                  <span className="text-xs font-bold uppercase tracking-widest text-violet-400">AI Reasoning</span>
+                  <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-400 ring-1 ring-violet-500/20">
+                    {json.findings.length} rule{json.findings.length !== 1 ? "s" : ""} fired
+                  </span>
+                </div>
+                <svg className={`h-3.5 w-3.5 text-zinc-600 transition-transform ${xaiOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {xaiOpen && (
+                <div className="border-t border-white/5 px-4 pb-4 pt-3 space-y-2">
+                  <p className="mb-3 text-[10px] text-zinc-600">
+                    Each finding is an expert rule evaluated deterministically against your data.
+                    Confidence = rule signal strength.
+                  </p>
+                  {(json.findings as InsightFinding[]).map((f) => {
+                    const sColor =
+                      f.severity === "critical" ? "text-red-400 bg-red-500/10 ring-red-500/20"
+                      : f.severity === "warning" ? "text-amber-400 bg-amber-500/10 ring-amber-500/20"
+                      : "text-blue-400 bg-blue-500/10 ring-blue-500/20";
+                    return (
+                      <div key={f.id} className="flex items-start gap-3 rounded-lg border border-white/5 bg-zinc-900/60 px-3 py-2.5">
+                        <span className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ring-1 ${sColor}`}>
+                          {f.severity}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-zinc-200">{f.title}</p>
+                          <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">{f.body}</p>
+                        </div>
+                        <span className="shrink-0 font-mono text-xs font-bold text-violet-400">
+                          {Math.round(f.confidence * 100)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -8,26 +8,26 @@
 
 I built a finance SaaS because I was tired of apps that ask for my bank password.
 
-Here's what I shipped instead — and the one engineering decision that makes it different.
+Here's what I shipped instead — and the engineering decision that makes it different from every other "AI finance app" out there.
 
 ---
 
 InsightStack analyses your spending without ever connecting to your bank.
 
-Export a CSV (every bank supports this). Upload it. GPT-4o analyses your transactions and surfaces anomalies, category breakdowns, and recommendations — in 60 seconds. Your banking credentials stay where they belong.
+Export a CSV (every bank supports this). Upload it. A custom AI engine analyses your transactions and surfaces anomalies, category breakdowns, and a financial health score — in under 10 seconds. Your banking credentials stay where they belong.
 
-The feature list is what you'd expect. What isn't obvious is the pipeline underneath.
+The feature list is what you'd expect. What isn't obvious is the AI underneath.
 
-**I designed the AI to never fail.**
+**I built the entire AI from scratch. No OpenAI. No external APIs. Zero cost at runtime.**
 
-Before any transaction data reaches OpenAI:
-→ Emails, phone numbers, and long digit strings are stripped server-side
-→ The payload is capped at 100 rows / 50k characters
-→ A SHA-256 hash checks for a cached result first
+The engine has five layers:
+→ BM25 probabilistic retrieval over a 38-document financial knowledge base (the same algorithm that powers Elasticsearch)
+→ Ordinary least squares regression detects whether your spending is increasing, decreasing, or stable
+→ Herfindahl-Hirschman Index (a DOJ antitrust metric) measures spending concentration across categories
+→ An expert rule engine with 10 typed financial rules and confidence scores
+→ A natural language generation layer composes the final narrative
 
-When GPT-4o responds, every field is Zod-validated against a strict schema. If the model returns malformed JSON, times out, or the API is down — a local algorithm runs the same analysis automatically.
-
-The user always gets an insight. They never know which path ran.
+It also forecasts next month's spending with a 95% confidence interval derived from OLS residuals — and assigns a Financial Health Score (0–100) that's fully explainable: tap "AI Reasoning" on any insight and see exactly which rules fired and why.
 
 **Three other things I'm proud of:**
 
@@ -37,23 +37,24 @@ The user always gets an insight. They never know which path ran.
 
 → The quota system is enforced by counting immutable AuditLog rows — not a mutable counter. No race condition possible. No drift under concurrent requests.
 
-Stack: Next.js 16 · TypeScript strict · PostgreSQL · Prisma 7 · OpenAI GPT-4o · Stripe · Vercel
+Stack: Next.js 16 · TypeScript strict · PostgreSQL · Prisma 7 · FinanceAI (custom) · Stripe · Vercel
 
 Live demo → [YOUR LIVE URL]
 Source → github.com/anishonly121/insightstack-blueprint
 
-Open to full-stack or backend roles. Happy to walk through any of the architecture decisions above.
+Open to full-stack, backend, or AI/ML engineering roles. Happy to walk through any of the architecture decisions above.
 
-#buildinpublic #nextjs #typescript #openai #softwareengineering #fullstack #postgresql
+#buildinpublic #nextjs #typescript #machinelearning #softwareengineering #fullstack #postgresql
 
 ---
 
 ## WHY THIS POST WORKS
 
 - **First two lines** are the hook — visible before "see more". They create curiosity by naming a real problem.
-- **"I designed the AI to never fail"** is the memorable line. Everyone remembers the one interesting thing.
+- **"No OpenAI. No external APIs. Zero cost."** is the memorable line — every engineer will stop and re-read.
+- **Named algorithms** (BM25, OLS, HHI) signal you understand what you built, not just that you built it.
 - **Three specific engineering decisions** with honest reasoning — shows judgment, not just features.
-- **Ends with a clear ask** — "open to roles" — so recruiters know what to do.
+- **Ends with a clear ask** and mentions AI/ML roles specifically.
 - **No defensive language** — doesn't mention "instead of applying for jobs."
 
 ---
@@ -63,6 +64,6 @@ Open to full-stack or backend roles. Happy to walk through any of the architectu
 - [ ] Replace [YOUR LIVE URL] with your actual domain
 - [ ] Post on a Tuesday, Wednesday, or Thursday
 - [ ] Between 8–10am your local time
-- [ ] Add `docs/screenshots/linkedin.png` as the image
+- [ ] Add `docs/screenshots/insights.png` as the image (shows health score ring + FinanceAI output)
 - [ ] Reply to every comment within the first 60 minutes (algorithm rewards this)
 - [ ] After posting, share it in any developer Discord/Slack communities you're in

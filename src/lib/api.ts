@@ -24,6 +24,18 @@ export type Dataset = {
   createdAt: string;
 };
 
+export type InsightFinding = {
+  id: string;
+  type: string;
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  body: string;
+  confidence: number;
+  tags: string[];
+  category?: string;
+  amount?: number;
+};
+
 export type InsightJson = {
   summary: string;
   topSpendingCategories: Array<{
@@ -37,8 +49,31 @@ export type InsightJson = {
     category: string;
     amount: number;
     reason: string;
+    zScore?: number;
   }>;
   recommendations: [string, string, string];
+  /** OLS forecast for next month with 95% CI — absent on insights generated before v2.2 */
+  forecast?: {
+    predicted: number;
+    lower: number;
+    upper: number;
+    basisMonths: number;
+  } | null;
+  /** Composite health score 0–100 — absent on insights generated before v2.2 */
+  healthScore?: {
+    score: number;
+    grade: 'critical' | 'poor' | 'fair' | 'good' | 'excellent';
+    breakdown: {
+      savingsComponent: number;
+      concentrationComponent: number;
+      trendComponent: number;
+      anomalyComponent: number;
+    };
+  };
+  /** Engine confidence 0–1 — absent on insights generated before v2.2 */
+  confidence?: number;
+  /** Expert rule findings — absent on insights generated before v2.2 */
+  findings?: InsightFinding[];
 };
 
 export type Insight = {

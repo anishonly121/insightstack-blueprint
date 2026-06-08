@@ -1,6 +1,6 @@
-import type { MetricsJson, AnomalyStat, EngineOutput, EnhancedStats } from './types';
+import type { MetricsJson, AnomalyStat, EngineOutput, EnhancedStats, HealthScore } from './types';
 import { evaluateRules } from './strategies/rules';
-import { detectTrend, computeHHI, computeMonthlyVolatility } from './strategies/statistical';
+import { detectTrend, computeHHI, computeMonthlyVolatility, forecastNextMonth } from './strategies/statistical';
 import { BM25 } from './strategies/bm25';
 import { KNOWLEDGE_BASE } from './knowledge/base';
 import {
@@ -96,6 +96,64 @@ function deriveConfidence(
 }
 
 /**
+ * Composite financial health score (0–100) from five weighted components:
+ *   savings rate (45%), spending concentration (20%), trend direction (15%),
+ *   anomaly count (10%), deficit/surplus (10%).
+ *
+ * Thresholds are informed by standard personal-finance benchmarks
+ * (20% savings target, HHI < 0.15 = diversified, 2σ anomaly threshold).
+ */
+function computeHealthScore(
+  metrics: MetricsJson,
+  anomalies: AnomalyStat[],
+  stats: EnhancedStats,
+): HealthScore {
+  const sr = metrics.savingsRate;
+  const savingsComponent =
+    sr <= 0  ? 0
+    : sr < 5  ? 15
+    : sr < 10 ? 30
+    : sr < 15 ? 45
+    : sr < 20 ? 60
+    : sr < 30 ? 75
+    : sr < 40 ? 88
+    : 100;
+
+  // Lower HHI = better diversification → higher score
+  const concentrationComponent = Math.max(0, Math.round(100 - stats.concentration * 300));
+
+  const trendComponent =
+    stats.trend.direction === 'decreasing' ? 90
+    : stats.trend.direction === 'stable'   ? 70
+    : 35;
+
+  const anomalyComponent = Math.max(0, 100 - anomalies.length * 25);
+
+  const deficitComponent = metrics.netSavings >= 0 ? 100 : 0;
+
+  const score = Math.min(100, Math.max(0, Math.round(
+    savingsComponent * 0.45 +
+    concentrationComponent * 0.20 +
+    trendComponent * 0.15 +
+    anomalyComponent * 0.10 +
+    deficitComponent * 0.10,
+  )));
+
+  const grade: HealthScore['grade'] =
+    score >= 85 ? 'excellent'
+    : score >= 70 ? 'good'
+    : score >= 50 ? 'fair'
+    : score >= 30 ? 'poor'
+    : 'critical';
+
+  return {
+    score,
+    grade,
+    breakdown: { savingsComponent, concentrationComponent, trendComponent, anomalyComponent },
+  };
+}
+
+/**
  * Core analysis engine.
  * Runs all strategies and composes a structured EngineOutput.
  */
@@ -124,6 +182,7 @@ export function generateInsights(metrics: MetricsJson, anomalies: AnomalyStat[])
     category: a.category,
     amount: a.amount,
     reason: composeAnomalyReason(a),
+    zScore: a.zScore,
   }));
 
   const recommendations = composeRecommendations(
@@ -135,6 +194,8 @@ export function generateInsights(metrics: MetricsJson, anomalies: AnomalyStat[])
   );
 
   const confidence = deriveConfidence(metrics, findings.length, stats);
+  const forecast = forecastNextMonth(metrics.monthlyBreakdown);
+  const healthScore = computeHealthScore(metrics, anomalies, stats);
 
   return {
     summary,
@@ -144,6 +205,8 @@ export function generateInsights(metrics: MetricsJson, anomalies: AnomalyStat[])
     findings,
     confidence,
     model: FINANCE_AI_MODEL,
+    forecast,
+    healthScore,
   };
 }
 

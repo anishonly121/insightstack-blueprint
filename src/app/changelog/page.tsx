@@ -28,6 +28,19 @@ const BADGE: Record<ChangeEntry["type"], { label: string; className: string }> =
 
 const VERSIONS: Version[] = [
   {
+    version: "2.2.0",
+    date: "June 2026",
+    summary: "Financial Health Score, spending forecast with 95% CI, Explainable AI panel, and z-score display on anomaly cards.",
+    changes: [
+      { type: "added",   text: "Financial Health Score (0–100) — composite of savings rate (45%), HHI concentration (20%), trend (15%), anomaly count (10%), deficit/surplus (10%); rendered as SVG ring on insight cards" },
+      { type: "added",   text: "Spending forecast — OLS extrapolation to next month with RMSE-based 95% confidence interval (requires ≥3 months of data)" },
+      { type: "added",   text: "Explainable AI panel — collapsible section on each insight showing every expert rule that fired, its severity, and confidence score" },
+      { type: "added",   text: "Z-score badges on anomaly cards — surfaces the statistical deviation value (e.g. 3.2σ) for each flagged transaction" },
+      { type: "added",   text: "Engine confidence displayed as a badge next to the model identifier on each insight card" },
+      { type: "changed", text: "InsightPayload now stores forecast, healthScore, confidence, and findings in the DB alongside summary, categories, and recommendations" },
+    ],
+  },
+  {
     version: "2.1.0",
     date: "June 2026",
     summary: "Replaced OpenAI with a custom-built FinanceAI engine — BM25 retrieval, linear regression, expert rules, and intent-based chat. Zero external AI dependency.",
