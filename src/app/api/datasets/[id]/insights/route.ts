@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger";
 import { computeMetrics, detectAnomalies } from "@/lib/metrics";
 import { getInsightsQuota } from "@/lib/subscription";
 import { generateInsights, FINANCE_AI_MODEL } from "@/lib/ai";
+import type { ForecastResult, HealthScore, Finding } from "@/lib/ai/types";
 
 const idSchema = z.string().uuid("Invalid dataset id");
 const INSIGHTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -31,8 +32,13 @@ export type InsightPayload = {
     category: string;
     amount: number;
     reason: string;
+    zScore: number;
   }>;
   recommendations: [string, string, string];
+  forecast: ForecastResult | null;
+  healthScore: HealthScore;
+  confidence: number;
+  findings: Finding[];
 };
 
 const resolveAuthorizedDataset = async (
@@ -187,6 +193,10 @@ export async function POST(
     topSpendingCategories: engineOutput.topSpendingCategories,
     anomalies: engineOutput.anomalies,
     recommendations: engineOutput.recommendations,
+    forecast: engineOutput.forecast,
+    healthScore: engineOutput.healthScore,
+    confidence: engineOutput.confidence,
+    findings: engineOutput.findings,
   };
   const model = FINANCE_AI_MODEL;
 
@@ -197,7 +207,7 @@ export async function POST(
         model,
         cacheKey,
         insightText: insightPayload.summary,
-        insightJson: insightPayload,
+        insightJson: insightPayload as unknown as import("@prisma/client").Prisma.InputJsonValue,
       },
     });
   });

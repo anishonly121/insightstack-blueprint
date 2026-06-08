@@ -1,4 +1,4 @@
-import type { MetricsJson, CategoryStat } from '../types';
+import type { MetricsJson, CategoryStat, ForecastResult } from '../types';
 
 export interface TrendResult {
   slope: number;
@@ -71,6 +71,44 @@ export function computeMonthlyVolatility(
 
   const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / n;
   return Number((Math.sqrt(variance) / mean).toFixed(3));
+}
+
+/**
+ * Forecast next month's expenses using OLS extrapolation.
+ *
+ * Requires at least 3 months of data. Returns a point estimate plus a
+ * 95% confidence interval derived from the root-mean-square residual error.
+ * Returns null when there is insufficient data for a meaningful forecast.
+ */
+export function forecastNextMonth(
+  monthlyBreakdown: MetricsJson['monthlyBreakdown'],
+): ForecastResult | null {
+  const n = monthlyBreakdown.length;
+  if (n < 3) return null;
+
+  const sorted = [...monthlyBreakdown].sort((a, b) => a.month.localeCompare(b.month));
+  const x = Array.from({ length: n }, (_, i) => i);
+  const y = sorted.map((m) => m.expenses);
+
+  const xMean = x.reduce((a, b) => a + b, 0) / n;
+  const yMean = y.reduce((a, b) => a + b, 0) / n;
+
+  const numerator = x.reduce((sum, xi, i) => sum + (xi - xMean) * (y[i]! - yMean), 0);
+  const denominator = x.reduce((sum, xi) => sum + Math.pow(xi - xMean, 2), 0);
+  const slope = denominator === 0 ? 0 : numerator / denominator;
+  const intercept = yMean - slope * xMean;
+
+  const predicted = intercept + slope * n;
+  const residuals = y.map((yi, i) => yi - (intercept + slope * i));
+  const rmse = Math.sqrt(residuals.reduce((sum, r) => sum + r * r, 0) / n);
+  const margin = 1.96 * rmse;
+
+  return {
+    predicted: Math.max(0, Number(predicted.toFixed(2))),
+    lower: Math.max(0, Number((predicted - margin).toFixed(2))),
+    upper: Number(Math.max(0, predicted + margin).toFixed(2)),
+    basisMonths: n,
+  };
 }
 
 /**

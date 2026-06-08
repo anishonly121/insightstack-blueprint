@@ -32,6 +32,26 @@ export interface EnhancedStats {
   avgMonthlyExpense: number;
 }
 
+/** OLS forecast for next month's expenses with RMSE-based 95% confidence interval. */
+export interface ForecastResult {
+  predicted: number;
+  lower: number;
+  upper: number;
+  basisMonths: number;
+}
+
+/** Composite financial health score (0–100) derived from five weighted components. */
+export interface HealthScore {
+  score: number;
+  grade: 'critical' | 'poor' | 'fair' | 'good' | 'excellent';
+  breakdown: {
+    savingsComponent: number;
+    concentrationComponent: number;
+    trendComponent: number;
+    anomalyComponent: number;
+  };
+}
+
 export interface EngineOutput {
   summary: string;
   topSpendingCategories: Array<{ category: string; amount: number; reason: string }>;
@@ -41,11 +61,14 @@ export interface EngineOutput {
     category: string;
     amount: number;
     reason: string;
+    zScore: number;
   }>;
   recommendations: [string, string, string];
   findings: Finding[];
   confidence: number;
   model: string;
+  forecast: ForecastResult | null;
+  healthScore: HealthScore;
 }
 
 export interface ChatMessage {

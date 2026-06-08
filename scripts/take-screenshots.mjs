@@ -24,7 +24,10 @@ async function wait(ms) {
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
-  const ctx     = await browser.newContext({ viewport: VIEWPORT_DESKTOP });
+  const ctx     = await browser.newContext({
+    viewport: VIEWPORT_DESKTOP,
+    deviceScaleFactor: 2,   // retina — crisp on LinkedIn retina displays
+  });
   const page    = await ctx.newPage();
 
   // ── 1. Landing page ──────────────────────────────────────────────────────
@@ -82,7 +85,7 @@ async function wait(ms) {
   const openLink = page.locator('a:has-text("Open →")').first();
   await openLink.waitFor({ timeout: 8000 });
   await openLink.click();
-  await page.waitForURL("**/dashboard/datasets/**", { timeout: 15000 });
+  await page.waitForURL("**/dashboard/**", { timeout: 15000 });
   // Wait for the charts section to appear (means data has loaded)
   await page.waitForSelector('text="Category Breakdown"', { timeout: 20000 });
   await wait(2000);   // let charts fully render
@@ -100,13 +103,21 @@ async function wait(ms) {
   await genBtn.waitFor({ timeout: 8000 });
   await genBtn.click();
   try {
-    // Wait for streaming to finish — the panel switches to "Analysis Complete"
-    await page.waitForSelector('text="Analysis Complete"', { timeout: 45000 });
-    await wait(3000);  // let the insight card appear
-    console.log("  ✓ Insights generated");
+    // Wait for FinanceAI to finish — stream emits "Analysis complete" step
+    await page.waitForSelector(
+      'text=/Analysis complete/i',
+      { timeout: 45000 }
+    );
+    await wait(3000);  // let the insight card fully render
+    console.log("  ✓ FinanceAI engine complete — insights rendered");
   } catch {
-    console.log("  ⚠ Insights took too long — capturing current state");
+    console.log("  ⚠ Insight stream timed out — capturing current state");
+    await wait(2000);
   }
+
+  // Scroll down to show the generated insight card
+  await page.evaluate(() => window.scrollBy(0, 500));
+  await wait(800);
   await shot(page, "insights");
 
   // ── 8. About page ─────────────────────────────────────────────────────────
