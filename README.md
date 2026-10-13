@@ -1,4 +1,4 @@
-# InsightStack — AI-Powered Finance Analytics
+# InsightStack: AI-Powered Finance Analytics
 
 > Upload your transactions. Understand your spending. Get AI-driven recommendations.
 
@@ -9,7 +9,7 @@
 ![FinanceAI](https://img.shields.io/badge/FinanceAI-Custom%20Engine-6366f1?logo=sparkles&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-22c55e)
 
-InsightStack is a **production-grade full-stack SaaS** that turns raw CSV bank exports into a visual financial dashboard with AI-powered spending insights. The AI layer is a custom-built engine — BM25 information retrieval, linear regression, an expert rule system, and intent-based chat — with zero external AI API dependency. Built end-to-end with real auth, real payments, 29 integration tests and a Playwright E2E suite — no mocks.
+InsightStack is a **full-stack web app** that turns raw CSV bank exports into a visual financial dashboard with spending insights. The analysis layer is a custom-built engine (BM25 information retrieval, linear regression, an expert rule system and intent-based chat) with no external AI API. Built end to end with real auth, real payments, 29 integration tests and a Playwright E2E suite, with no mocks.
 
 **[Live Demo →](https://insightstack-peach.vercel.app)** · **[How It Works](https://insightstack-peach.vercel.app/demo)** · **[Changelog](https://insightstack-peach.vercel.app/changelog)**
 
@@ -19,11 +19,11 @@ InsightStack is a **production-grade full-stack SaaS** that turns raw CSV bank e
 
 ## Why I built this
 
-Most finance apps that offer AI insights require you to connect your bank account via OAuth — giving a third-party service live read access to your transactions in exchange for a spending report.
+Most finance apps that offer AI insights require you to connect your bank account via OAuth, giving a third-party service live read access to your transactions in exchange for a spending report.
 
 InsightStack takes the opposite approach: export a CSV from your bank (something every bank supports, no credentials required), upload it, and get the same quality analysis. Your banking credentials never leave your bank. Your transaction data only lives in your own database.
 
-That constraint forced better engineering. A parser that handles any CSV format. A metrics engine that computes everything server-side. And instead of calling OpenAI, I built the entire AI layer from scratch — BM25 retrieval (the same algorithm powering Elasticsearch), linear regression for trend detection, the Herfindahl-Hirschman Index for spending concentration, and an intent-based chat engine. Zero API cost, zero latency, data never leaves the server.
+That constraint forced better engineering. A parser that handles any CSV format. A metrics engine that computes everything server-side. And instead of calling OpenAI, I built the entire AI layer from scratch: BM25 retrieval (the same algorithm powering Elasticsearch), linear regression for trend detection, the Herfindahl-Hirschman Index for spending concentration, and an intent-based chat engine. Zero API cost, zero latency, data never leaves the server.
 
 ---
 
@@ -47,7 +47,7 @@ That constraint forced better engineering. A parser that handles any CSV format.
 
 ## Screenshots
 
-> **[Try the live app →](https://insightstack-peach.vercel.app)** — sign up free, upload `docs/demo-transactions.csv`, and generate AI insights in under 60 seconds.
+> **[Try the live app →](https://insightstack-peach.vercel.app)**. Sign up free, upload `docs/demo-transactions.csv`, and generate AI insights in under 60 seconds.
 
 | Landing Page | Dashboard | AI Insights |
 |---|---|---|
@@ -64,7 +64,7 @@ That constraint forced better engineering. A parser that handles any CSV format.
 | 3. Upload CSV | Parse, validate, and store transaction rows in PostgreSQL |
 | 4. View Dashboard | Income vs. expenses, savings rate, monthly bar chart, category pie chart |
 | 5. Search Transactions | Filter by category or search description with server-side pagination |
-| 6. Generate AI Insights | FinanceAI analyses spending — returns summary, anomalies, top categories, 3 recommendations |
+| 6. Generate AI Insights | FinanceAI analyses spending and returns a summary, anomalies, top categories and 3 recommendations |
 
 ---
 
@@ -76,7 +76,7 @@ flowchart TD
         UI["Next.js App Router\nReact 19 · TypeScript · Tailwind"]
     end
 
-    subgraph Vercel["Vercel — Next.js Server"]
+    subgraph Vercel["Vercel: Next.js Server"]
         MW["Auth Middleware\nJWT Bearer + HttpOnly Cookie"]
         API["API Route Handlers\n/api/*"]
         RL["Rate Limiter\nRateLimitBucket table"]
@@ -123,25 +123,25 @@ flowchart TD
 
 These are the design decisions that go beyond a typical tutorial project:
 
-**Custom AI engine (no external API)** — The entire AI layer (`src/lib/ai/`) is built from scratch. BM25 (the probabilistic retrieval algorithm powering Elasticsearch) retrieves the most contextually relevant financial knowledge documents for each user's situation. Linear regression detects spending trends. The Herfindahl-Hirschman Index (used by the DOJ for antitrust) measures spending concentration. A typed expert rule engine evaluates 10 financial rules with confidence scores. An NLG composer selects from multiple narrative templates based on financial health profile. Zero external API calls, zero latency, data never leaves the server.
+**Custom AI engine (no external API)**: The entire AI layer (`src/lib/ai/`) is built from scratch. BM25 (the probabilistic retrieval algorithm powering Elasticsearch) retrieves the most contextually relevant financial knowledge documents for each user's situation. Linear regression detects spending trends. The Herfindahl-Hirschman Index (used by the DOJ for antitrust) measures spending concentration. A typed expert rule engine evaluates 10 financial rules with confidence scores. An NLG composer selects from multiple narrative templates based on financial health profile. Zero external API calls, zero latency, data never leaves the server.
 
-**MetricSnapshot caching** — Analytics are computed server-side once and stored as a `MetricSnapshot` row in PostgreSQL with a 1-hour TTL. Subsequent dashboard loads read directly from the snapshot instead of re-aggregating thousands of transaction rows on every request.
+**MetricSnapshot caching**: Analytics are computed server-side once and stored as a `MetricSnapshot` row in PostgreSQL with a 1-hour TTL. Subsequent dashboard loads read directly from the snapshot instead of re-aggregating thousands of transaction rows on every request.
 
-**DB-backed rate limiting without Redis** — A `RateLimitBucket` table (keyed by action + user ID + IP) handles per-user and per-IP rate limits with opportunistic row cleanup. No external queue or cache dependency required.
+**DB-backed rate limiting without Redis**: A `RateLimitBucket` table (keyed by action + user ID + IP) handles per-user and per-IP rate limits with opportunistic row cleanup. No external queue or cache dependency required.
 
-**Dual auth strategy** — Every protected route accepts both a `Bearer` JWT header *and* an HttpOnly cookie simultaneously. API clients use the header; browser page navigations use the cookie. The same middleware handles both without duplication.
+**Dual auth strategy**: Every protected route accepts both a `Bearer` JWT header *and* an HttpOnly cookie simultaneously. API clients use the header; browser page navigations use the cookie. The same middleware handles both without duplication.
 
-**Real integration tests** — Tests spawn an actual `next start` process, poll `/api/health` until ready, and run against a live PostgreSQL database. No mocks. This caught real regressions during development that unit tests would have missed (e.g., Prisma query shape changes, JSON serialisation edge cases).
+**Real integration tests**: Tests spawn an actual `next start` process, poll `/api/health` until ready, and run against a live PostgreSQL database. No mocks. This caught real regressions during development that unit tests would have missed (e.g., Prisma query shape changes, JSON serialisation edge cases).
 
-**Immutable audit log** — Every sensitive action (upload, rename, delete, insight generate) appends a row to `AuditLog`. Rows are never updated or deleted. The daily insight quota is enforced by counting AuditLog entries rather than a mutable counter that could drift under concurrent requests.
+**Immutable audit log**: Every sensitive action (upload, rename, delete, insight generate) appends a row to `AuditLog`. Rows are never updated or deleted. The daily insight quota is enforced by counting AuditLog entries rather than a mutable counter that could drift under concurrent requests.
 
-**Typed AI output boundaries** — The FinanceAI engine returns a fully-typed `EngineOutput` object. Because the engine runs in-process, there is no network boundary, no schema mismatch, and no rate limit. The same Zod schemas are used for both HTTP request validation and AI output validation where applicable.
+**Typed AI output boundaries**: The FinanceAI engine returns a fully-typed `EngineOutput` object. Because the engine runs in-process, there is no network boundary, no schema mismatch, and no rate limit. The same Zod schemas are used for both HTTP request validation and AI output validation where applicable.
 
-**Structured JSON logging** — All API-layer errors and key events (`INSIGHTS_PROMPT_STATS`, `RATE_LIMIT_CLEANUP_ERROR`, etc.) are emitted via a typed logger that outputs JSON in production (for log aggregators) and human-readable lines in development. Correlation IDs flow through every log entry.
+**Structured JSON logging**: All API-layer errors and key events (`INSIGHTS_PROMPT_STATS`, `RATE_LIMIT_CLEANUP_ERROR`, etc.) are emitted via a typed logger that outputs JSON in production (for log aggregators) and human-readable lines in development. Correlation IDs flow through every log entry.
 
-**Playwright E2E suite** — Beyond the 29 integration tests, a Playwright browser-level suite drives the full user journey: landing page → register → create dataset → upload CSV → verify PARSED status → navigate to dataset detail. Runs headlessly against localhost or the live deployment.
+**Playwright E2E suite**: Beyond the 29 integration tests, a Playwright browser-level suite drives the full user journey: landing page → register → create dataset → upload CSV → verify PARSED status → navigate to dataset detail. Runs headlessly against localhost or the live deployment.
 
-**URL-based SSL detection** — Rather than branching on `NODE_ENV` (which is `'production'` in CI too), SSL is detected by checking the connection string for `'localhost'` — a more reliable signal across local, CI, and production environments.
+**URL-based SSL detection**: Rather than branching on `NODE_ENV` (which is `'production'` in CI too), SSL is detected by checking the connection string for `'localhost'`, which is a more reliable signal across local, CI, and production environments.
 
 ---
 
@@ -149,17 +149,17 @@ These are the design decisions that go beyond a typical tutorial project:
 
 Every architectural decision has a cost. These are the ones worth discussing in an interview:
 
-**PostgreSQL for rate limiting instead of Redis** — Adds one write per rate-limited endpoint. Acceptable at this scale and eliminates a Redis dependency. At >1k concurrent users, the `RateLimitBucket` table becomes a write bottleneck and Redis would be the right call.
+**PostgreSQL for rate limiting instead of Redis**: Adds one write per rate-limited endpoint. Acceptable at this scale and eliminates a Redis dependency. At >1k concurrent users, the `RateLimitBucket` table becomes a write bottleneck and Redis would be the right call.
 
-**No mock tests** — Integration tests are slower (30–60s total) and require a live database. This is deliberate. Mocks test that your mock matches your expectations, not that your code works. A real test caught a Prisma query-shape regression mid-development that a unit test would have silently passed.
+**No mock tests**: Integration tests are slower (30–60s total) and require a live database. This is deliberate. Mocks test that your mock matches your expectations, not that your code works. A real test caught a Prisma query-shape regression mid-development that a unit test would have silently passed.
 
-**MetricSnapshot instead of live aggregation** — Computing dashboard metrics on every page load means scanning all `Transaction` rows per request. The 1-hour snapshot cache trades freshness for constant-time reads. Acceptable for personal finance (yesterday's data is fine); wrong for trading dashboards.
+**MetricSnapshot instead of live aggregation**: Computing dashboard metrics on every page load means scanning all `Transaction` rows per request. The 1-hour snapshot cache trades freshness for constant-time reads. Acceptable for personal finance (yesterday's data is fine); wrong for trading dashboards.
 
-**JWTs instead of server-side sessions** — Sessions require shared state (Redis or a DB table). JWTs are stateless and work naturally across Vercel's serverless functions with no coordination. The tradeoff: tokens can't be revoked before expiry. Mitigated by short TTLs and the HttpOnly cookie path clearing on logout.
+**JWTs instead of server-side sessions**: Sessions require shared state (Redis or a DB table). JWTs are stateless and work naturally across Vercel's serverless functions with no coordination. The tradeoff: tokens can't be revoked before expiry. Mitigated by short TTLs and the HttpOnly cookie path clearing on logout.
 
-**Daily insight quota via AuditLog counting** — Rather than a mutable `insightCount` column that could go wrong under concurrent requests, the quota is enforced by counting immutable AuditLog rows. The count is always accurate; there's no race condition; the log is a useful audit trail regardless.
+**Daily insight quota via AuditLog counting**: Rather than a mutable `insightCount` column that could go wrong under concurrent requests, the quota is enforced by counting immutable AuditLog rows. The count is always accurate; there's no race condition; the log is a useful audit trail regardless.
 
-**Structured AI output** — The FinanceAI engine always returns a typed `EngineOutput` object validated by TypeScript. Because the engine runs in-process rather than calling an external API, there is no network failure mode, no schema mismatch, and no rate limit. The output is deterministic: identical input always produces the same analysis.
+**Structured AI output**: The FinanceAI engine always returns a typed `EngineOutput` object validated by TypeScript. Because the engine runs in-process rather than calling an external API, there is no network failure mode, no schema mismatch, and no rate limit. The output is deterministic: identical input always produces the same analysis.
 
 ---
 
@@ -175,11 +175,11 @@ Every architectural decision has a cost. These are the ones worth discussing in 
 | CSV Parsing | Papa Parse |
 | Charts | Recharts (Pie, Bar, Line) |
 | Styling | Tailwind CSS v4 |
-| AI | FinanceAI (custom engine — BM25, linear regression, HHI, expert rules, NLG) |
+| AI | FinanceAI (custom engine: BM25, linear regression, HHI, expert rules, NLG) |
 | Email | SendGrid (password reset) |
 | Testing | Node.js built-in test runner (29 integration tests) |
 | CI | GitHub Actions (lint + type-check + build + migrate + 29 integration tests) |
-| E2E | Playwright (8 tests — auth flow, upload, dataset detail) |
+| E2E | Playwright (8 tests: auth flow, upload, dataset detail) |
 | Deployment | Vercel |
 
 ---
@@ -195,23 +195,23 @@ Every architectural decision has a cost. These are the ones worth discussing in 
 
 ### Dataset Management
 - Create, list (paginated), view, rename, delete datasets
-- CSV upload with row-level validation — bad rows skipped, good rows inserted atomically via Prisma transactions
+- CSV upload with row-level validation: bad rows skipped, good rows inserted atomically via Prisma transactions
 - Dataset status: `UPLOADED` → `PARSED` / `FAILED`
 
 ### Analytics & Metrics
 - Server-computed `MetricSnapshot` per dataset: total income, total expenses, net savings, savings rate, avg transaction, top categories, monthly breakdown
-- Results cached for 1 hour — no redundant aggregation queries
+- Results cached for 1 hour, so there are no redundant aggregation queries
 - Three charts: category pie, monthly income/expense bar, net savings trend line
 - One-click CSV export of filtered transactions
 
-### AI Insights (FinanceAI — no external API)
-- **BM25 retrieval** — Elasticsearch-class probabilistic ranking over a 38-document financial knowledge base; retrieves the most contextually relevant advice per user situation
-- **Linear regression** — OLS slope over monthly expense data for trend detection (increasing / decreasing / stable)
-- **Herfindahl-Hirschman Index** — measures spending concentration; adapted from the DOJ antitrust metric
-- **Expert rule engine** — 10 typed financial rules (deficit, savings rate, concentration risk, anomaly count, trend direction) each with a confidence score
-- **NLG composer** — 3 summary templates selected by financial health profile; context-aware category and anomaly reasons
-- **Intent-based chat** — keyword-scored intent detection with referential pronoun resolution; answers questions about categories, savings rate, anomalies, monthly trends
-- Results cached by data hash — identical input skips recomputation
+### AI Insights (FinanceAI, no external API)
+- **BM25 retrieval**: Elasticsearch-class probabilistic ranking over a 38-document financial knowledge base; retrieves the most contextually relevant advice per user situation
+- **Linear regression**: OLS slope over monthly expense data for trend detection (increasing / decreasing / stable)
+- **Herfindahl-Hirschman Index**: measures spending concentration; adapted from the DOJ antitrust metric
+- **Expert rule engine**: 10 typed financial rules (deficit, savings rate, concentration risk, anomaly count, trend direction) each with a confidence score
+- **NLG composer**: 3 summary templates selected by financial health profile; context-aware category and anomaly reasons
+- **Intent-based chat**: keyword-scored intent detection with referential pronoun resolution; answers questions about categories, savings rate, anomalies, monthly trends
+- Results cached by data hash, so identical input skips recomputation
 - Daily quota of 30 insights per user (enforced via AuditLog counting)
 - Zero API cost, zero external latency, data never leaves the server
 
@@ -224,17 +224,17 @@ Every architectural decision has a cost. These are the ones worth discussing in 
 - DB-backed rate limiting (no Redis required)
 
 ### UX & Polish
-- **Toast notification system** — slide-in success/error/warning/info toasts with auto-dismiss, manual close, and stacking support
-- **FAQ accordion** — CSS `grid-template-rows: 0fr → 1fr` animation; no max-height snapping
-- **Annual / monthly pricing toggle** — Pro plan shows `$9/mo` or `$7/mo (billed $84/yr)` with animated "Save 20%" badge; present on both landing page and `/pricing`
-- **Drag-and-drop CSV upload** — full drag event handling with visual feedback per dataset card; click-to-browse still works
-- **Demo dataset loader** — one-click button in empty dashboard state creates a pre-populated 47-row dataset and uploads it via the real API
-- **Keyboard shortcuts panel** — press `?` anywhere on the dashboard; `N` focuses the new dataset input, `←/→` paginate, `Esc` closes
-- **Sample CSV download** — hero CTA gives visitors a 47-row realistic demo CSV to try immediately
+- **Toast notification system**: slide-in success/error/warning/info toasts with auto-dismiss, manual close, and stacking support
+- **FAQ accordion**: CSS `grid-template-rows: 0fr → 1fr` animation; no max-height snapping
+- **Annual / monthly pricing toggle**: Pro plan shows `$9/mo` or `$7/mo (billed $84/yr)` with animated "Save 20%" badge; present on both landing page and `/pricing`
+- **Drag-and-drop CSV upload**: full drag event handling with visual feedback per dataset card; click-to-browse still works
+- **Demo dataset loader**: one-click button in empty dashboard state creates a pre-populated 47-row dataset and uploads it via the real API
+- **Keyboard shortcuts panel**: press `?` anywhere on the dashboard; `N` focuses the new dataset input, `←/→` paginate, `Esc` closes
+- **Sample CSV download**: hero CTA gives visitors a 47-row realistic demo CSV to try immediately
 
 ### SEO & Discoverability
-- `robots.txt` via Next.js Metadata API — blocks `/dashboard`, `/admin`, `/api/` from crawlers
-- `sitemap.xml` — all 8 public routes with correct priorities and change frequencies
+- `robots.txt` via Next.js Metadata API: blocks `/dashboard`, `/admin`, `/api/` from crawlers
+- `sitemap.xml`: all 8 public routes with correct priorities and change frequencies
 
 ### Admin Panel
 - View all users and datasets across the platform
@@ -304,7 +304,7 @@ RateLimitBucket (keyed by action + user + IP)
 
 ### Prerequisites
 - Node.js 18+
-- PostgreSQL database — free tier on [Neon](https://neon.tech) or [Supabase](https://supabase.com) works fine
+- PostgreSQL database (a free tier on [Neon](https://neon.tech) or [Supabase](https://supabase.com) works fine)
 
 ### 1. Clone & install
 
@@ -330,7 +330,7 @@ SENDGRID_TEMPLATE_RESET_PASSWORD="d-..."
 NODE_ENV="development"
 ```
 
-> SendGrid keys are optional for local dev — password reset emails will silently no-op.
+> SendGrid keys are optional for local dev. Without them, password reset emails silently no-op.
 
 ### 3. Run migrations & seed
 
@@ -379,7 +379,7 @@ npm run lint         # ESLint
 Tests spawn `next start` against a real PostgreSQL database and run 29 integration tests across auth, datasets, upload, metrics, transaction filtering, insights, rename, and delete. **No mocks.**
 
 ```bash
-npm run build   # required — tests run against the production build
+npm run build   # required: tests run against the production build
 npm test
 ```
 
@@ -403,13 +403,13 @@ BASE_URL=https://insightstack-peach.vercel.app npm run test:e2e
 ## Deployment (Vercel + Neon)
 
 1. Push this repo to GitHub
-2. Import into [Vercel](https://vercel.com) — **set the root directory to `app/`**
+2. Import into [Vercel](https://vercel.com) and **set the root directory to `app/`**
 3. Add all environment variables from `.env` in the Vercel dashboard
 4. Run migrations against your production Neon database:
    ```bash
    npx prisma migrate deploy
    ```
-5. Deploy — Vercel will run `npm run build` automatically
+5. Deploy. Vercel will run `npm run build` automatically
 
 ---
 
@@ -438,8 +438,8 @@ app/
 │   │   └── Toaster.tsx                 # Toast notification system (context + UI)
 │   └── lib/
 │       ├── ai/                         # FinanceAI engine (zero external API)
-│       │   ├── index.ts                #   Public facade — generateInsights, streamInsightSummary, chat
-│       │   ├── engine.ts               #   Orchestrator — runs all strategies, composes output
+│       │   ├── index.ts                #   Public facade: generateInsights, streamInsightSummary, chat
+│       │   ├── engine.ts               #   Orchestrator: runs all strategies, composes output
 │       │   ├── chat.ts                 #   Intent-based Q&A with referential resolution
 │       │   ├── types.ts                #   Shared types (Finding, EngineOutput, ChatContext)
 │       │   ├── knowledge/base.ts       #   38-document financial knowledge base
@@ -484,11 +484,11 @@ app/
 
 ## Built by
 
-**Anish Bhole** — Full-stack Software Engineer  
+**Anish Bhole**, IT student at Singapore Polytechnic  
 [LinkedIn](https://www.linkedin.com/in/anishbhole/) · [Live Demo](https://insightstack-peach.vercel.app) · [GitHub](https://github.com/anishonly121/insightstack-blueprint)
 
 ---
 
 ## License
 
-MIT — free to use, fork, and build on.
+MIT. Free to use, fork and build on.
