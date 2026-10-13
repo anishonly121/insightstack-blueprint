@@ -26,7 +26,7 @@ InsightStack is built with security as a first-class concern:
 - **Authentication** — JWT + HttpOnly cookies; Bearer and cookie auth handled by a single shared middleware
 - **CSRF** — Cookie-authenticated mutations require a matching CSRF header
 - **Rate limiting** — Per-user and per-IP limits enforced via a DB-backed `RateLimitBucket` table
-- **PII protection** — Transaction descriptions are scrubbed of emails, phone numbers, and national ID patterns before reaching OpenAI
+- **Data stays on the server** — Analysis runs in-process, so transaction data is never sent to a third-party AI service
 - **Audit log** — Immutable `AuditLog` rows for every sensitive action (upload, insight generate, rename, delete)
 - **Input validation** — All request bodies validated with Zod before processing; AI responses schema-validated before use
 - **HTTP hardening** — CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and Permissions-Policy headers on all responses

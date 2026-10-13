@@ -12,7 +12,7 @@ cd insightstack-blueprint/app
 npm install
 ```
 
-Copy `.env.example` to `.env` and fill in your values. The only required keys for local development are `DATABASE_URL`, `DIRECT_URL`, and `JWT_SECRET`. SendGrid and OpenAI keys are optional — features that need them degrade gracefully.
+Copy `.env.example` to `.env` and fill in your values. The only required keys for local development are `DATABASE_URL`, `DIRECT_URL`, and `JWT_SECRET`. The SendGrid key is optional — features that need it degrade gracefully.
 
 ```bash
 npx prisma migrate dev --name init
