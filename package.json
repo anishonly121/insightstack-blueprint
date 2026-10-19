@@ -8,6 +8,7 @@
         "start": "next start",
         "type-check": "tsc --noEmit",
         "test": "node --test --test-concurrency=1 tests/admin.integration.test.mjs tests/auth.integration.test.mjs tests/datasets.integration.test.mjs tests/metrics.integration.test.mjs",
+        "test:unit": "node --import tsx --test tests/unit/*.test.ts",
         "test:e2e": "node --test tests/e2e/full-journey.test.mjs",
         "lint": "eslint",
         "prisma:generate": "prisma generate",
@@ -50,6 +51,7 @@
         "playwright": "^1.60.0",
         "tailwindcss": "^4",
         "ts-node": "^10.9.2",
+        "tsx": "^4.23.15",
         "typescript": "^5"
     }
 }

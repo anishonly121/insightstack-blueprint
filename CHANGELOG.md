@@ -7,6 +7,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Insights treated income as spending.** `topCategories` now lists spending categories only, largest first. Previously income came out on top, so the engine suggested capping "Income" and called healthy savers critical.
+- **Salary flagged as unusual.** Anomaly detection now only looks at money going out.
+- **"Per month" advice used whole-dataset totals.** Recommendations, the budget tracker, budget alert emails and the weekly digest now use monthly figures.
+- **Streamed insights were missing the health score, forecast and findings.** The dashboard's generate button now saves the same payload as the API route.
+- **Chat and streamed insights were never rate limited.** The limiter result was being ignored.
+- **Stale numbers after re-uploading a CSV.** Cached metric snapshots are cleared on upload, and chat always uses current data.
+- **Mixed-case emails.** Emails are stored in lowercase and matched case-insensitively, so password reset works for every account.
+- **Weekly digest cron was open when `CRON_SECRET` was unset.** It now refuses to run in production without the secret.
+
+### Changed
+- **CSV import is more forgiving.** Headers match in any case and with common names (Transaction Date, Merchant, Debit/Credit). DD/MM/YYYY, MM/DD/YYYY and "13 Feb 2026" dates, currency symbols and bracket negatives are handled. Skipped rows are counted and shown to the user. Limit of 50,000 rows per dataset.
+- **Budget alert emails** now run with `after()` so they are not cut off on serverless.
+- **Login** takes the same time whether or not the email exists.
+
+### Added
+- Unit tests for metrics, the insights engine and CSV parsing (`npm run test:unit`), run in CI.
+
 ---
 
 ## [2.0.0] — 2026-06-03
