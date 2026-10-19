@@ -7,9 +7,14 @@ import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
+import { findUserIdByEmail } from "@/lib/users";
+
+// Compared against when the email is unknown, so a wrong email takes about as
+// long to reject as a wrong password and response time does not reveal which accounts exist.
+const DUMMY_PASSWORD_HASH = "$2b$10$1FNfEvE3/CmFVVkRRpr3O.VxllO9OrJD5RUhH9aNVjzoz6D75zZTq";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email"),
+  email: z.string().trim().email("Invalid email"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -61,8 +66,10 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     const { email, password } = parsed.data;
 
-    const dbUser = await prisma.user.findUnique({ where: { email } });
+    const userId = await findUserIdByEmail(email);
+    const dbUser = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
     if (!dbUser) {
+      await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
       return errorResponseWithRequestId(
         requestId,
         401,

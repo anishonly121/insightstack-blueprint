@@ -7,11 +7,15 @@ import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
+import { findUserIdByEmail } from "@/lib/users";
 
 const resetPasswordSchema = z.object({
-  email: z.string().email("Invalid email"),
+  email: z.string().trim().email("Invalid email"),
   token: z.string().min(1, "Token is required"),
-  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password must be 72 characters or fewer"),
 });
 
 const hashToken = (rawToken: string): string => {
@@ -64,13 +68,10 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    const email = parsed.data.email.toLowerCase().trim();
     const tokenHash = hashToken(parsed.data.token);
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
+    const userId = await findUserIdByEmail(parsed.data.email);
+    const user = userId ? { id: userId } : null;
 
     if (!user) {
       return errorResponseWithRequestId(requestId, 400, "INVALID_TOKEN", "Invalid reset token");

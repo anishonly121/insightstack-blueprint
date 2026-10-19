@@ -7,11 +7,15 @@ import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
+import { findUserIdByEmail, normalizeEmail } from "@/lib/users";
 
 const registerSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().trim().min(1, "Name is required").max(100, "Name is too long"),
+  email: z.string().trim().email("Invalid email").transform(normalizeEmail),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password must be 72 characters or fewer"),
 });
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -57,7 +61,8 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     const { name, email, password } = parsed.data;
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existingId = await findUserIdByEmail(email);
+    const existing = existingId ? { id: existingId } : null;
     if (existing) {
       await logAudit({
         userId: existing.id,
