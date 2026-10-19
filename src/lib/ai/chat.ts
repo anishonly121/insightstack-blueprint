@@ -1,6 +1,7 @@
 import type { ChatContext, ChatMessage } from './types';
 import { KNOWLEDGE_BASE } from './knowledge/base';
 import { BM25 } from './strategies/bm25';
+import { perMonth } from '../metrics';
 
 // ── Intent taxonomy ────────────────────────────────────────────────────────────
 
@@ -159,7 +160,7 @@ function answerSavingsRate(ctx: ChatContext): string {
       : rate < 10
       ? `${rate.toFixed(1)}% is critically low — significantly below the recommended 20%.`
       : rate < 20
-      ? `${rate.toFixed(1)}% is below the 20% benchmark. You need to save $${((0.2 * metrics.totalIncome) - metrics.netSavings).toFixed(2)} more per month to hit the target.`
+      ? `${rate.toFixed(1)}% is below the 20% benchmark. You need to save $${perMonth((0.2 * metrics.totalIncome) - metrics.netSavings, metrics).toFixed(2)} more per month to hit the target.`
       : rate < 35
       ? `${rate.toFixed(1)}% — on target. The standard benchmark is 20%.`
       : `${rate.toFixed(1)}% — excellent. This is well above the 20% benchmark and puts you on a path to financial independence.`;
@@ -280,7 +281,7 @@ function answerRecommendations(ctx: ChatContext): string {
 
   if (metrics.totalIncome > 0 && metrics.savingsRate < 20) {
     recs.push(
-      `Increase savings by $${((0.2 * metrics.totalIncome) - metrics.netSavings).toFixed(2)}/month to reach the 20% benchmark. Automate this as a standing transfer on payday.`,
+      `Increase savings by $${perMonth((0.2 * metrics.totalIncome) - metrics.netSavings, metrics).toFixed(2)}/month to reach the 20% benchmark. Automate this as a standing transfer on payday.`,
     );
   }
   if (anomalies.length > 0) {
@@ -297,7 +298,7 @@ function answerRecommendations(ctx: ChatContext): string {
     const top = metrics.topCategories[0];
     if (top) {
       const pct = ((Math.abs(top.total) / Math.max(metrics.totalExpenses, 1)) * 100).toFixed(0);
-      recs.push(`${top.category} is ${pct}% of total expenses. A 10% reduction saves $${(Math.abs(top.total) * 0.1).toFixed(2)}/month.`);
+      recs.push(`${top.category} is ${pct}% of total expenses. A 10% reduction saves $${perMonth(Math.abs(top.total) * 0.1, metrics).toFixed(2)}/month.`);
     }
   }
 

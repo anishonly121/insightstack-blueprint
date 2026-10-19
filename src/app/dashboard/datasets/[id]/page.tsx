@@ -618,10 +618,18 @@ function computeForecast(monthlyBreakdown: MetricsJson["monthlyBreakdown"]): {
 
 // ── Budget tracker ────────────────────────────────────────────────────────────
 
+function formatMonthLabel(month: string): string {
+  const [year, m] = month.split("-").map(Number);
+  if (!year || !m) return month;
+  return new Date(Date.UTC(year, m - 1, 1)).toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
 function BudgetTracker({
-  categories, budgets, onUpsert, onDelete,
+  categories, monthCount, latestMonth, budgets, onUpsert, onDelete,
 }: {
   categories: MetricsJson["topCategories"];
+  monthCount: number;
+  latestMonth: string | null;
   budgets: Budget[];
   onUpsert: (category: string, limit: number) => Promise<void>;
   onDelete: (category: string) => Promise<void>;
@@ -660,14 +668,18 @@ function BudgetTracker({
         </div>
         <div>
           <h2 className="font-bold text-zinc-100">Budget Tracker</h2>
-          <p className="text-xs text-zinc-600">Set monthly limits per category — tracked across all your datasets</p>
+          <p className="text-xs text-zinc-600">
+            Set monthly limits per category. Compared with {latestMonth ? `your spending in ${formatMonthLabel(latestMonth)}` : "your average month"}.
+          </p>
         </div>
       </div>
 
       <div className="divide-y divide-white/4 px-5">
         {categories.slice(0, 8).map((cat) => {
           const limit = budgetMap.get(cat.category);
-          const spent = Math.abs(cat.total);
+          // Budgets are monthly, so compare against one month of spend:
+          // the latest month in the data, or the monthly average for older snapshots.
+          const spent = cat.latestMonthTotal ?? Math.abs(cat.total) / Math.max(1, monthCount);
           const ratio = limit ? Math.min(spent / limit, 1) : 0;
           const pctNum = limit ? (spent / limit) * 100 : 0;
           const isOver = limit !== undefined && spent > limit;
@@ -1092,6 +1104,8 @@ export default function DashboardDatasetDetailPage() {
             {metrics && metrics.topCategories.length > 0 && (
               <BudgetTracker
                 categories={metrics.topCategories}
+                monthCount={metrics.monthlyBreakdown.length}
+                latestMonth={metrics.latestMonth ?? null}
                 budgets={budgets}
                 onUpsert={onUpsertBudget}
                 onDelete={onDeleteBudget}

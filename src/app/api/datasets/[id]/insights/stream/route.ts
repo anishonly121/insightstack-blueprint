@@ -11,6 +11,8 @@ import { logger } from "@/lib/logger";
 import { computeMetrics, detectAnomalies } from "@/lib/metrics";
 import { getInsightsQuota } from "@/lib/subscription";
 import { generateInsights, streamInsightSummary, FINANCE_AI_MODEL } from "@/lib/ai";
+import type { Prisma } from "@prisma/client";
+import type { InsightPayload } from "@/app/api/datasets/[id]/insights/route";
 
 const idSchema = z.string().uuid("Invalid dataset id");
 const INSIGHTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -51,9 +53,12 @@ export async function POST(
   const ip = getRequestIp(req);
   const requestMeta = getAuditRequestMeta(req);
 
-  try {
-    await rateLimitOrThrow({ key: `datasets:insights:${dataset.id}:${user.id}:${ip}`, limit: 20, windowMs: 60_000 });
-  } catch {
+  const { allowed } = await rateLimitOrThrow({
+    key: `datasets:insights:${dataset.id}:${user.id}:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!allowed) {
     return errorResponseWithRequestId(requestId, 429, "RATE_LIMITED", "Too many requests. Try again later.");
   }
 
@@ -120,11 +125,17 @@ export async function POST(
 
         emit({ type: "step", message: "Saving insight to database…", status: "running" });
 
-        const insightPayload = {
+        // Same shape as the non-streaming route, so the health score, forecast
+        // and findings panels have data to show.
+        const insightPayload: InsightPayload = {
           summary: engineOutput.summary,
           topSpendingCategories: engineOutput.topSpendingCategories,
           anomalies: engineOutput.anomalies,
           recommendations: engineOutput.recommendations,
+          forecast: engineOutput.forecast,
+          healthScore: engineOutput.healthScore,
+          confidence: engineOutput.confidence,
+          findings: engineOutput.findings,
         };
 
         const savedInsight = await prisma.insight.create({
@@ -133,7 +144,7 @@ export async function POST(
             model: FINANCE_AI_MODEL,
             cacheKey,
             insightText: insightPayload.summary,
-            insightJson: insightPayload,
+            insightJson: insightPayload as unknown as Prisma.InputJsonValue,
           },
         });
 

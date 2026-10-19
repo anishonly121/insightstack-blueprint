@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { sendWeeklyDigest, type DigestData } from "@/lib/digest";
-import type { MetricsJson } from "@/lib/metrics";
+import { computeMetrics, monthlySpendForCategory } from "@/lib/metrics";
 import type { InsightPayload } from "@/app/api/datasets/[id]/insights/route";
 
-// Vercel Cron: runs every Monday at 08:00 UTC (configured in vercel.json)
-// Protected by CRON_SECRET env var — Vercel passes this automatically.
+// Vercel Cron: runs every Monday at 08:00 UTC (configured in vercel.json).
+// Protected by the CRON_SECRET env var, which Vercel sends as a Bearer token.
+// In production the route refuses to run if CRON_SECRET is not set.
 
 const MAX_USERS_PER_RUN = 100;
 
@@ -17,12 +18,14 @@ function currentMonthLabel(): string {
 export async function GET(req: Request): Promise<NextResponse> {
   // Verify caller is Vercel Cron (or an authorised manual trigger)
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      logger.warn("CRON_UNAUTHORIZED", { path: "/api/cron/weekly-digest" });
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === "production") {
+      logger.error("CRON_SECRET_MISSING", { path: "/api/cron/weekly-digest" });
+      return NextResponse.json({ error: "Cron is not configured" }, { status: 503 });
     }
+  } else if (req.headers.get("Authorization") !== `Bearer ${cronSecret}`) {
+    logger.warn("CRON_UNAUTHORIZED", { path: "/api/cron/weekly-digest" });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   logger.info("CRON_DIGEST_START", { at: new Date().toISOString() });
@@ -46,19 +49,30 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   for (const user of users) {
     try {
-      // Most recent metric snapshot across all of this user's datasets
-      const snapshot = await prisma.metricSnapshot.findFirst({
-        where: { dataset: { userId: user.id } },
-        orderBy: { computedAt: "desc" },
-        include: { dataset: { select: { name: true } } },
+      // Use the user's most recent parsed dataset and compute fresh metrics,
+      // so the email never relies on an old cached snapshot.
+      const dataset = await prisma.dataset.findFirst({
+        where: { userId: user.id, status: "PARSED" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true },
       });
 
-      if (!snapshot?.metricsJson) {
+      if (!dataset) {
         skipped++;
         continue;
       }
 
-      const metrics = snapshot.metricsJson as unknown as MetricsJson;
+      const transactions = await prisma.transaction.findMany({
+        where: { datasetId: dataset.id },
+        select: { date: true, category: true, amount: true },
+      });
+
+      if (transactions.length === 0) {
+        skipped++;
+        continue;
+      }
+
+      const metrics = computeMetrics(transactions);
 
       // Budget data for over-budget detection
       const budgets = await prisma.budget.findMany({
@@ -68,8 +82,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
       const overBudget = budgets
         .map((b) => {
-          const cat = metrics.topCategories.find((c) => c.category === b.category);
-          const spent = cat ? Math.abs(cat.total) : 0;
+          const spent = monthlySpendForCategory(metrics, b.category);
           const limit = Number(b.monthlyLimit.toString());
           return { category: b.category, spent, limit };
         })
@@ -89,7 +102,7 @@ export async function GET(req: Request): Promise<NextResponse> {
         to: user.email,
         name: user.name.split(" ")[0] ?? user.name,
         month,
-        datasetName: snapshot.dataset.name,
+        datasetName: dataset.name,
         totalIncome: metrics.totalIncome,
         totalExpenses: metrics.totalExpenses,
         netSavings: metrics.netSavings,

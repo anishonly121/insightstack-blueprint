@@ -134,7 +134,7 @@ export type PaginatedMeta = {
   totalPages: number;
 };
 
-export type CategoryStat = { category: string; total: number; count: number };
+export type CategoryStat = { category: string; total: number; count: number; latestMonthTotal?: number };
 export type MonthStat = { month: string; income: number; expenses: number; net: number };
 
 export type MetricsJson = {
@@ -146,6 +146,7 @@ export type MetricsJson = {
   avgTransaction: number;
   topCategories: CategoryStat[];
   monthlyBreakdown: MonthStat[];
+  latestMonth?: string | null;
 };
 
 export type MetricSnapshot = {
@@ -329,6 +330,8 @@ export const api = {
         rowCount: number;
         originalFilename: string | null;
         previewJson: unknown;
+        skippedRows?: number;
+        totalRows?: number;
       };
     }>(`/api/datasets/${id}/upload`, {
       method: "POST",

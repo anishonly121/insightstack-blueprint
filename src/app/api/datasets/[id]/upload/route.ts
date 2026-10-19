@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { z } from "zod";
-import Papa from "papaparse";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/auth";
@@ -10,45 +9,17 @@ import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
 import { sendBudgetAlertEmail } from "@/lib/alerts";
 import { logger } from "@/lib/logger";
+import { computeMetrics, monthlySpendForCategory } from "@/lib/metrics";
+import { parseTransactionsCsv } from "@/lib/csv";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_ROWS = 50_000;
 
 const idSchema = z.string().uuid("Invalid dataset id");
 const fileSchema = z.object({
   name: z.string().min(1, "File name is required"),
   size: z.number().max(MAX_FILE_SIZE, "File size must be 5MB or less"),
 });
-
-type CsvRow = Record<string, unknown>;
-
-type TransactionInput = {
-  datasetId: string;
-  date: Date;
-  description: string;
-  category: string;
-  amount: string;
-};
-
-const toStringValue = (value: unknown): string => {
-  if (typeof value === "string") return value.trim();
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  return "";
-};
-
-const parseDateValue = (value: unknown): Date | null => {
-  const raw = toStringValue(value);
-  if (!raw) return null;
-  const parsed = new Date(raw);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const parseAmountValue = (value: unknown): string | null => {
-  const raw = toStringValue(value).replace(/,/g, "");
-  if (!raw) return null;
-  const numeric = Number(raw);
-  if (!Number.isFinite(numeric)) return null;
-  return numeric.toFixed(2);
-};
 
 export async function POST(
   req: Request,
@@ -127,13 +98,9 @@ export async function POST(
     }
 
     const text = await fileValue.text();
-    const parsed = Papa.parse<CsvRow>(text, {
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: true,
-    });
+    const parsed = parseTransactionsCsv(text);
 
-    if (parsed.errors.length > 0) {
+    if (!parsed.ok) {
       await prisma.dataset.update({
         where: { id: dataset.id },
         data: {
@@ -145,37 +112,29 @@ export async function POST(
         select: { id: true },
       });
 
-      return errorResponseWithRequestId(requestId, 400, "CSV_PARSE_ERROR", "Unable to parse CSV file");
+      return errorResponseWithRequestId(requestId, 400, "CSV_PARSE_ERROR", parsed.message);
     }
 
-    const parsedRows = parsed.data as CsvRow[];
-    const previewJson = parsedRows.slice(0, 20) as Prisma.InputJsonValue;
-    const rowsToInsert: TransactionInput[] = parsedRows
-      .map((row) => {
-        const date = parseDateValue(row.date);
-        const description = toStringValue(row.description);
-        const category = toStringValue(row.category);
-        const amount = parseAmountValue(row.amount);
+    if (parsed.rows.length > MAX_ROWS) {
+      return errorResponseWithRequestId(
+        requestId,
+        400,
+        "VALIDATION_ERROR",
+        `This file has ${parsed.rows.length.toLocaleString()} transactions. The limit is ${MAX_ROWS.toLocaleString()} per dataset.`,
+      );
+    }
 
-        if (!date || !description || !category || !amount) {
-          return null;
-        }
-
-        return {
-          datasetId: dataset.id,
-          date,
-          description,
-          category,
-          amount,
-        };
-      })
-      .filter((row): row is TransactionInput => row !== null);
-
+    const previewJson = parsed.preview as Prisma.InputJsonValue;
+    const rowsToInsert = parsed.rows.map((row) => ({ datasetId: dataset.id, ...row }));
     const insertedCount = rowsToInsert.length;
     const nextStatus = insertedCount > 0 ? "PARSED" : "FAILED";
 
     const updated = await prisma.$transaction(async (tx) => {
       await tx.transaction.deleteMany({
+        where: { datasetId: dataset.id },
+      });
+      // Cached metrics describe the old file, so drop them.
+      await tx.metricSnapshot.deleteMany({
         where: { datasetId: dataset.id },
       });
 
@@ -202,7 +161,7 @@ export async function POST(
       });
 
       return updatedDataset;
-    });
+    }, { timeout: 30_000 });
 
     await logAudit({
       userId: user.id,
@@ -212,14 +171,17 @@ export async function POST(
       meta: {
         originalFilename: fileValue.name,
         rowCount: insertedCount,
+        skippedRows: parsed.skippedRows,
         status: nextStatus,
         ...requestMeta,
       },
     });
 
-    // Fire-and-forget: check budgets and send alert if any category hits 80%+
+    // After the response is sent, check budgets and email an alert if any
+    // category has reached 80% of its monthly limit. `after` keeps the work
+    // alive on serverless platforms, where a plain un-awaited promise can be cut off.
     if (nextStatus === "PARSED" && rowsToInsert.length > 0) {
-      void (async () => {
+      after(async () => {
         try {
           const [budgets, fullUser, datasetRecord] = await Promise.all([
             prisma.budget.findMany({ where: { userId: user.id } }),
@@ -229,15 +191,10 @@ export async function POST(
 
           if (!budgets.length || !fullUser?.emailDigestEnabled) return;
 
-          const categoryTotals = new Map<string, number>();
-          for (const tx of rowsToInsert) {
-            const amt = Math.abs(Number(tx.amount));
-            categoryTotals.set(tx.category, (categoryTotals.get(tx.category) ?? 0) + amt);
-          }
-
+          const metrics = computeMetrics(rowsToInsert);
           const alerts = budgets
             .map((b) => {
-              const spent = categoryTotals.get(b.category) ?? 0;
+              const spent = monthlySpendForCategory(metrics, b.category);
               const limit = Number(b.monthlyLimit.toString());
               const pct = limit > 0 ? (spent / limit) * 100 : 0;
               return { category: b.category, spent, limit, pct };
@@ -259,18 +216,21 @@ export async function POST(
         } catch (err) {
           logger.error("BUDGET_ALERT_FAILED", { userId: user.id, error: err instanceof Error ? err.message : String(err) });
         }
-      })();
+      });
     }
 
-    return jsonWithRequestId(requestId, { data: updated });
-  } catch {
-    await prisma.dataset.update({
-      where: { id: dataset.id },
-      data: {
-        status: "FAILED",
-      },
-      select: { id: true },
+    return jsonWithRequestId(requestId, {
+      data: { ...updated, skippedRows: parsed.skippedRows, totalRows: parsed.totalRows },
     });
+  } catch (err) {
+    logger.error("DATASET_UPLOAD_ERROR", {
+      requestId,
+      datasetId: dataset.id,
+      errorName: err instanceof Error ? err.name : "UnknownError",
+    });
+    await prisma.dataset
+      .update({ where: { id: dataset.id }, data: { status: "FAILED" }, select: { id: true } })
+      .catch(() => undefined);
 
     return errorResponseWithRequestId(requestId, 500, "INTERNAL_SERVER_ERROR", "Something went wrong");
   }

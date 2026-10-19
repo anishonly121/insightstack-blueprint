@@ -71,43 +71,28 @@ export async function POST(
   }
 
   const ip = getRequestIp(req);
-  try {
-    await rateLimitOrThrow({ key: `datasets:chat:${dataset.id}:${user.id}:${ip}`, limit: 30, windowMs: 60_000 });
-  } catch {
+  const { allowed } = await rateLimitOrThrow({
+    key: `datasets:chat:${user.id}:${ip}`,
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (!allowed) {
     return errorResponseWithRequestId(requestId, 429, "RATE_LIMITED", "Too many requests. Try again later.");
   }
 
-  // Load metrics — from cache if available, otherwise compute fresh
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const cachedSnapshot = await prisma.metricSnapshot.findFirst({
-    where: { datasetId: dataset.id, computedAt: { gte: oneHourAgo } },
-    orderBy: { computedAt: "desc" },
-    select: { metricsJson: true },
+  // Always compute from the current transactions. This is cheap, keeps answers in
+  // sync with the latest upload, and means anomaly questions work every time.
+  const transactions = await prisma.transaction.findMany({
+    where: { datasetId: dataset.id },
+    select: { date: true, category: true, amount: true, description: true },
   });
-
-  let ctx: ChatContext;
-  if (cachedSnapshot?.metricsJson) {
-    const metrics = cachedSnapshot.metricsJson as ReturnType<typeof computeMetrics>;
-    ctx = {
-      datasetName: dataset.name,
-      metrics,
-      anomalies: [],
-      enhancedStats: computeEnhancedStats(metrics),
-    };
-  } else {
-    const transactions = await prisma.transaction.findMany({
-      where: { datasetId: dataset.id },
-      select: { date: true, category: true, amount: true, description: true },
-    });
-    const metrics = computeMetrics(transactions);
-    const anomalies = detectAnomalies(transactions);
-    ctx = {
-      datasetName: dataset.name,
-      metrics,
-      anomalies,
-      enhancedStats: computeEnhancedStats(metrics),
-    };
-  }
+  const metrics = computeMetrics(transactions);
+  const ctx: ChatContext = {
+    datasetName: dataset.name,
+    metrics,
+    anomalies: detectAnomalies(transactions),
+    enhancedStats: computeEnhancedStats(metrics),
+  };
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

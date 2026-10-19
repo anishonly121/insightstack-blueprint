@@ -1,4 +1,5 @@
 import type { MetricsJson, AnomalyStat, CategoryStat, Finding, EnhancedStats } from '../types';
+import { perMonth } from '../../metrics';
 import type { KnowledgeDoc } from '../knowledge/base';
 
 // ── Summary templates ──────────────────────────────────────────────────────────
@@ -163,7 +164,7 @@ export function composeRecommendations(
   const criticalFinding = findings.find((f) => f.severity === 'critical');
   if (criticalFinding?.id === 'deficit') {
     recs.push(
-      `Close the $${Math.abs(metrics.netSavings).toFixed(2)} monthly deficit immediately — audit every expense category and eliminate discretionary costs until income exceeds spending.`,
+      `Close the $${perMonth(Math.abs(metrics.netSavings), metrics).toFixed(2)} monthly deficit immediately — audit every expense category and eliminate discretionary costs until income exceeds spending.`,
     );
   } else if (criticalFinding?.id === 'concentration-extreme') {
     const top = metrics.topCategories[0];
@@ -177,11 +178,11 @@ export function composeRecommendations(
   // Priority 2: savings rate
   if (recs.length < 3 && metrics.totalIncome > 0) {
     if (metrics.savingsRate < 20) {
-      const gapMonthly = (0.2 * metrics.totalIncome - metrics.netSavings).toFixed(2);
+      const gapMonthly = perMonth(0.2 * metrics.totalIncome - metrics.netSavings, metrics).toFixed(2);
       const top = metrics.topCategories[0];
       const cutClause =
         top && Math.abs(top.total) > 0
-          ? ` Cutting ${top.category} spend by 15% would recover $${(Math.abs(top.total) * 0.15).toFixed(2)}/month toward that goal.`
+          ? ` Cutting ${top.category} spend by 15% would recover $${perMonth(Math.abs(top.total) * 0.15, metrics).toFixed(2)}/month toward that goal.`
           : '';
       recs.push(
         `Increase monthly savings by $${gapMonthly} to reach the 20% benchmark — automate a standing transfer on payday so the money moves before you can spend it.${cutClause}`,
@@ -214,7 +215,7 @@ export function composeRecommendations(
     if (top && metrics.totalExpenses > 0) {
       const pct = ((Math.abs(top.total) / metrics.totalExpenses) * 100).toFixed(0);
       recs.push(
-        `Set a monthly budget cap for ${top.category} — at $${Math.abs(top.total).toFixed(2)} it represents ${pct}% of total expenses. A 10% reduction would free up $${(Math.abs(top.total) * 0.1).toFixed(2)} per month.`,
+        `Set a monthly budget cap for ${top.category} — at $${perMonth(Math.abs(top.total), metrics).toFixed(2)} a month it represents ${pct}% of total expenses. A 10% reduction would free up $${perMonth(Math.abs(top.total) * 0.1, metrics).toFixed(2)} per month.`,
       );
     }
   }

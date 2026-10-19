@@ -7,9 +7,10 @@ import { getRequestIp, rateLimitOrThrow } from "@/lib/rateLimit";
 import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
 import { logger } from "@/lib/logger";
+import { findUserIdByEmail, normalizeEmail } from "@/lib/users";
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email("Invalid email"),
+  email: z.string().trim().email("Invalid email"),
 });
 
 const hashToken = (rawToken: string): string => {
@@ -81,13 +82,16 @@ export async function POST(req: Request): Promise<NextResponse> {
       );
     }
 
-    const email = parsed.data.email.toLowerCase().trim();
+    const email = normalizeEmail(parsed.data.email);
     const emailHash = hashEmailForLog(email);
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, name: true },
-    });
+    const userId = await findUserIdByEmail(email);
+    const user = userId
+      ? await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true, name: true },
+        })
+      : null;
 
     if (user) {
       await logAudit({

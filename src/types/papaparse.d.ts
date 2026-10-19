@@ -9,12 +9,12 @@ declare module "papaparse" {
   export type ParseResult<T> = {
     data: T[];
     errors: ParseError[];
-    meta: Record<string, unknown>;
+    meta: { fields?: string[]; [key: string]: unknown };
   };
 
   export type ParseConfig<T> = {
     header?: boolean;
-    skipEmptyLines?: boolean;
+    skipEmptyLines?: boolean | "greedy";
     dynamicTyping?: boolean;
     complete?: (results: ParseResult<T>) => void;
   };
