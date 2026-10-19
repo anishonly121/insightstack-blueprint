@@ -1,4 +1,14 @@
 import type { Finding, MetricsJson, AnomalyStat, EnhancedStats } from '../types';
+import { perMonth } from '../../metrics';
+
+/** With only one or two spending categories, "concentration" is meaningless. */
+const MIN_CATEGORIES_FOR_CONCENTRATION = 3;
+
+const FIXED_HOUSING_PATTERN = /\b(rent|rental|housing|mortgage|home loan|hdb)\b/i;
+
+export function isFixedHousingCost(category: string): boolean {
+  return FIXED_HOUSING_PATTERN.test(category);
+}
 
 export interface Rule {
   id: string;
@@ -47,7 +57,7 @@ const RULES: Rule[] = [
         type: 'rule',
         severity: 'info',
         title: 'Savings rate below 20% target',
-        body: `Your savings rate is ${metrics.savingsRate.toFixed(1)}%. The standard benchmark is 20%. Closing the gap by $${((0.20 * metrics.totalIncome) - metrics.netSavings).toFixed(2)} per month would hit the target.`,
+        body: `Your savings rate is ${metrics.savingsRate.toFixed(1)}%. The standard benchmark is 20%. Closing the gap by $${perMonth((0.20 * metrics.totalIncome) - metrics.netSavings, metrics).toFixed(2)} per month would hit the target.`,
         confidence: 0.9,
         tags: ['savings', 'info', 'target'],
       };
@@ -89,6 +99,7 @@ const RULES: Rule[] = [
     id: 'concentration-high',
     evaluate(metrics, _anomalies, stats) {
       if (stats.topCategoryShare < 0.40 || metrics.totalExpenses === 0) return null;
+      if (metrics.topCategories.length < MIN_CATEGORIES_FOR_CONCENTRATION) return null;
       const top = metrics.topCategories[0];
       if (!top) return null;
       return {
@@ -108,8 +119,12 @@ const RULES: Rule[] = [
     id: 'concentration-extreme',
     evaluate(metrics, _anomalies, stats) {
       if (stats.topCategoryShare < 0.60 || metrics.totalExpenses === 0) return null;
+      if (metrics.topCategories.length < MIN_CATEGORIES_FOR_CONCENTRATION) return null;
       const top = metrics.topCategories[0];
       if (!top) return null;
+      // Rent or a mortgage is expected to be the biggest line. Being large is
+      // not an emergency on its own, so leave it to the 'concentration-high' warning.
+      if (isFixedHousingCost(top.category)) return null;
       return {
         id: 'concentration-extreme',
         type: 'rule',
