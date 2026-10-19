@@ -472,11 +472,22 @@ export default function DashboardPage() {
       const res = await api.uploadDatasetCsv(datasetId, file);
       setFileByDataset((prev) => ({ ...prev, [datasetId]: null }));
       await loadDatasets(meta.page);
-      toast({
-        type: "success",
-        title: "CSV uploaded",
-        message: `${res.data.rowCount.toLocaleString()} rows parsed — ready for AI insights.`,
-      });
+      const skipped = res.data.skippedRows ?? 0;
+      if (res.data.rowCount === 0) {
+        toast({
+          type: "error",
+          title: "No transactions imported",
+          message: "None of the rows had a readable date and amount. Check the file and try again.",
+        });
+      } else {
+        toast({
+          type: skipped > 0 ? "warning" : "success",
+          title: "CSV uploaded",
+          message:
+            `${res.data.rowCount.toLocaleString()} transactions imported and ready for insights.` +
+            (skipped > 0 ? ` ${skipped.toLocaleString()} row${skipped === 1 ? " was" : "s were"} skipped because the date or amount couldn't be read.` : ""),
+        });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
       setAction(datasetId, { error: msg });
