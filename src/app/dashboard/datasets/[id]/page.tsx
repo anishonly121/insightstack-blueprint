@@ -1049,7 +1049,7 @@ function DatasetDetailContent({ id }: { id: string }) {
                 ) : (
                   <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
-                      <Pie data={categoryChart} dataKey="total" nameKey="category" outerRadius={90}
+                      <Pie data={categoryChart} dataKey="total" nameKey="category" outerRadius={90} isAnimationActive={false}
                         label={({ name, percent }) => `${name ?? ""} (${((percent ?? 0) * 100).toFixed(0)}%)`}
                         labelLine={{ stroke: "rgba(255,255,255,0.15)" }}>
                         {categoryChart.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} stroke="transparent" />)}
@@ -1071,8 +1071,8 @@ function DatasetDetailContent({ id }: { id: string }) {
                       <YAxis tick={{ fontSize: 11, fill: "#71717A" }} tickFormatter={v => `$${v}`} axisLine={false} tickLine={false} />
                       <Tooltip contentStyle={tooltipStyle} labelStyle={labelStyle} formatter={(v) => money(Number(v))} />
                       <Legend wrapperStyle={{ color: "#71717A", fontSize: "12px" }} />
-                      <Bar dataKey="income" fill="#10B981" name="Income" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="expenses" fill="#EF4444" name="Expenses" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="income" fill="#10B981" name="Income" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                      <Bar dataKey="expenses" fill="#EF4444" name="Expenses" radius={[4, 4, 0, 0]} isAnimationActive={false} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -1088,7 +1088,7 @@ function DatasetDetailContent({ id }: { id: string }) {
                     <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#71717A" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: "#71717A" }} tickFormatter={v => `$${v}`} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={tooltipStyle} labelStyle={labelStyle} formatter={(v) => money(Number(v))} />
-                    <Line type="monotone" dataKey="net" name="Net" stroke="#3B82F6" strokeWidth={2.5}
+                    <Line type="monotone" dataKey="net" name="Net" stroke="#3B82F6" strokeWidth={2.5} isAnimationActive={false}
                       dot={{ r: 4, fill: "#3B82F6", strokeWidth: 0 }}
                       activeDot={{ r: 6, fill: "#3B82F6", stroke: "rgba(59,130,246,0.3)", strokeWidth: 4 }} />
                   </LineChart>

@@ -122,6 +122,8 @@ test("analysis streams, persists, and chat answers an actual dataset question", 
   const response = await chatResponse;
   assert.equal(response.status(), 200);
   assert.ok((await response.text()).length > 40);
+  await page.locator(".recharts-pie-sector").first().waitFor();
+  await page.mouse.move(0, 0);
   await page.screenshot({ path: "artifacts/account-preview/dataset-analysis.png", fullPage: true });
 });
 

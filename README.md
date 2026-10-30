@@ -21,7 +21,7 @@ The demo contains fictional data. It uses the **same metrics and insight functio
 
 ![Interactive workspace](docs/screenshots/recruiter-overview.png)
 
-[Landing page preview](docs/screenshots/recruiter-landing.png) · [Mobile preview](docs/screenshots/recruiter-mobile.png)
+[Landing page preview](docs/screenshots/recruiter-landing.png) · [Mobile preview](docs/screenshots/recruiter-mobile.png) · [Signed-in analysis preview](docs/screenshots/recruiter-account.png)
 
 ## What the project demonstrates
 
@@ -73,6 +73,14 @@ npm run dev
 ```
 
 On PowerShell, use `Copy-Item .env.example .env` instead of `cp` if preferred. Open [localhost:3000](http://localhost:3000).
+
+If PostgreSQL is not installed, [Prisma's local database helper](https://www.prisma.io/docs/cli/v7/dev) can run an isolated development database:
+
+```sh
+npx prisma dev --name insightstack-local --detach
+```
+
+Copy the printed local `postgres://` URL into both `DATABASE_URL` and `DIRECT_URL` in your ignored `.env`, then run `npm run prisma:deploy`. Reuse the same named instance to retain local accounts and datasets. Stop it with `npx prisma dev stop insightstack-local` when finished. This is a development database, not production hosting.
 
 For a **demo-only local preview**, use local placeholder database URLs and a local-only JWT secret in `.env`, generate the Prisma client, and skip `prisma:deploy`. The public routes will work, but creating accounts, logging in, and uploading data require a real database.
 
