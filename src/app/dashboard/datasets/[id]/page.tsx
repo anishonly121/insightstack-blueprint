@@ -619,9 +619,10 @@ function computeForecast(monthlyBreakdown: MetricsJson["monthlyBreakdown"]): {
 // ── Budget tracker ────────────────────────────────────────────────────────────
 
 function BudgetTracker({
-  categories, budgets, onUpsert, onDelete,
+  categories, month, budgets, onUpsert, onDelete,
 }: {
   categories: MetricsJson["topCategories"];
+  month: string;
   budgets: Budget[];
   onUpsert: (category: string, limit: number) => Promise<void>;
   onDelete: (category: string) => Promise<void>;
@@ -629,6 +630,7 @@ function BudgetTracker({
   const [editing, setEditing] = useState<string | null>(null);
   const [inputVal, setInputVal] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
+  const [budgetError, setBudgetError] = useState("");
 
   const budgetMap = new Map(budgets.map((b) => [b.category, b.monthlyLimit]));
 
@@ -642,12 +644,18 @@ function BudgetTracker({
     const val = parseFloat(inputVal);
     if (!isFinite(val) || val <= 0) { setEditing(null); return; }
     setSaving(category);
-    try { await onUpsert(category, val); } finally { setSaving(null); setEditing(null); }
+    setBudgetError("");
+    try { await onUpsert(category, val); setEditing(null); }
+    catch (err) { setBudgetError(err instanceof Error ? err.message : "Unable to save budget"); }
+    finally { setSaving(null); }
   };
 
   const remove = async (category: string) => {
     setSaving(category);
-    try { await onDelete(category); } finally { setSaving(null); }
+    setBudgetError("");
+    try { await onDelete(category); }
+    catch (err) { setBudgetError(err instanceof Error ? err.message : "Unable to remove budget"); }
+    finally { setSaving(null); }
   };
 
   return (
@@ -660,10 +668,11 @@ function BudgetTracker({
         </div>
         <div>
           <h2 className="font-bold text-zinc-100">Budget Tracker</h2>
-          <p className="text-xs text-zinc-600">Set monthly limits per category — tracked across all your datasets</p>
+          <p className="text-xs text-zinc-500">Spending in this dataset for {month}. Monthly limits are shared across your datasets.</p>
         </div>
       </div>
 
+      {budgetError && <p role="alert" className="px-5 pt-3 text-sm text-red-400">{budgetError}</p>}
       <div className="divide-y divide-white/4 px-5">
         {categories.slice(0, 8).map((cat) => {
           const limit = budgetMap.get(cat.category);
@@ -1088,9 +1097,10 @@ function DatasetDetailContent({ id }: { id: string }) {
             )}
 
             {/* Budget tracker */}
-            {metrics && metrics.topCategories.length > 0 && (
+            {metrics?.latestMonthSpending && (
               <BudgetTracker
-                categories={metrics.topCategories}
+                categories={metrics.latestMonthSpending.categories}
+                month={metrics.latestMonthSpending.month}
                 budgets={budgets}
                 onUpsert={onUpsertBudget}
                 onDelete={onDeleteBudget}

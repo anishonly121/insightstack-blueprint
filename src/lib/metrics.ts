@@ -1,4 +1,4 @@
-export const METRICS_VERSION = 2;
+export const METRICS_VERSION = 3;
 export type CategoryStat = { category: string; total: number; count: number };
 export type MonthStat = { month: string; income: number; expenses: number; net: number };
 export type AnomalyStat = {
@@ -19,6 +19,7 @@ export type MetricsJson = {
   avgTransaction: number;
   topCategories: CategoryStat[];
   monthlyBreakdown: MonthStat[];
+  latestMonthSpending?: { month: string; categories: CategoryStat[] };
 };
 
 // Structural amount type supports Prisma.Decimal and browser demo numbers without
@@ -81,6 +82,16 @@ export function computeMetrics(transactions: MetricsTx[]): MetricsJson {
     }))
     .sort((a, b) => a.month.localeCompare(b.month));
 
+  const latestMonth = monthlyBreakdown.at(-1)?.month;
+  const latestCategories = new Map<string, CategoryStat>();
+  for (const tx of transactions) {
+    const amount = Number(tx.amount.toString());
+    if (amount >= 0 || tx.date.toISOString().slice(0, 7) !== latestMonth) continue;
+    const category = tx.category.trim() || "Uncategorized";
+    const previous = latestCategories.get(category) ?? { category, total: 0, count: 0 };
+    latestCategories.set(category, { category, total: previous.total + amount, count: previous.count + 1 });
+  }
+
   return {
     calculationVersion: METRICS_VERSION,
     totalIncome: Number(totalIncome.toFixed(2)),
@@ -91,6 +102,7 @@ export function computeMetrics(transactions: MetricsTx[]): MetricsJson {
     avgTransaction: Number(avgTransaction.toFixed(2)),
     topCategories,
     monthlyBreakdown,
+    ...(latestMonth ? { latestMonthSpending: { month: latestMonth, categories: [...latestCategories.values()].map((cat) => ({ ...cat, total: Number(cat.total.toFixed(2)) })).sort((a, b) => a.total - b.total) } } : {}),
   };
 }
 

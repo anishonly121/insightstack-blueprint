@@ -23,6 +23,19 @@ const tx = (amount, category = "Food", date = "2026-01-01") => ({
   date: new Date(date),
 });
 
+test("monthly budgets use only the latest recorded month and exclude receipts", () => {
+  const metrics = computeMetrics([
+    tx(-900, "Food", "2026-01-01"), tx(-80, "Food", "2026-02-01"),
+    tx(20, "Food", "2026-02-02"), tx(-120, "Travel", "2026-02-03"),
+  ]);
+  assert.equal(metrics.totalExpenses, 1100);
+  assert.deepEqual(metrics.latestMonthSpending, { month: "2026-02", categories: [
+    { category: "Travel", total: -120, count: 1 }, { category: "Food", total: -80, count: 1 },
+  ] });
+  assert.equal(computeMetrics([]).latestMonthSpending, undefined);
+  assert.deepEqual(computeMetrics([tx(-100), tx(200, "Income", "2026-02-01")]).latestMonthSpending, { month: "2026-02", categories: [] });
+});
+
 test("spending rankings exclude income, do not net refunds, and rank largest expenses first", () => {
   const metrics = computeMetrics([
     tx(5000, "Income"),

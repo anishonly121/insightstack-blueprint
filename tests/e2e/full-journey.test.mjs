@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { mkdir } from "node:fs/promises";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
@@ -31,6 +32,7 @@ before(async () => {
   page = await ctx.newPage();
   page.setDefaultTimeout(15000);
   page.on("pageerror", (error) => pageErrors.push(error.message));
+  await mkdir("artifacts/account-preview", { recursive: true });
 });
 
 after(async () => {
@@ -120,6 +122,32 @@ test("analysis streams, persists, and chat answers an actual dataset question", 
   const response = await chatResponse;
   assert.equal(response.status(), 200);
   assert.ok((await response.text()).length > 40);
+  await page.screenshot({ path: "artifacts/account-preview/dataset-analysis.png", fullPage: true });
+});
+
+test("sharing publishes an insight and revoking makes it private again", async () => {
+  const published = page.waitForResponse((res) => res.url().endsWith("/share") && res.request().method() === "POST");
+  await page.getByRole("button", { name: "Share", exact: true }).first().click();
+  const response = await published;
+  assert.equal(response.status(), 200);
+  const { data } = await response.json();
+  const insightId = new URL(data.url).pathname.split("/").at(-1);
+  const publicUrl = `${BASE}/api/share/${insightId}`;
+  assert.equal((await fetch(publicUrl)).status, 200);
+  const revoked = page.waitForResponse((res) => res.url().endsWith("/share") && res.request().method() === "POST");
+  await page.getByRole("button", { name: "Shared", exact: true }).first().click();
+  assert.equal((await revoked).status(), 200);
+  assert.equal((await fetch(publicUrl)).status, 404);
+});
+
+test("monthly budget limits save and persist", async () => {
+  await page.getByRole("button", { name: "+ Set limit", exact: true }).first().click();
+  await page.getByPlaceholder("Monthly limit").fill("500");
+  const saved = page.waitForResponse((res) => res.url().endsWith("/budgets") && res.request().method() === "POST");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  assert.equal((await saved).status(), 200);
+  await page.reload();
+  await page.getByText("of $500.00/mo", { exact: true }).waitFor();
 });
 
 test("settings persist notification preferences and expose unavailable billing", async () => {
@@ -134,6 +162,7 @@ test("settings persist notification preferences and expose unavailable billing",
   assert.notEqual(await toggle.getAttribute("aria-checked"), previous);
   await page.getByRole("button", { name: /Upgrade to Pro/ }).click();
   await page.getByRole("alert").filter({ hasText: "Payments are not yet enabled" }).waitFor();
+  await page.screenshot({ path: "artifacts/account-preview/account-settings.png", fullPage: true });
 });
 
 test("password change, logout, and new-password login work", async () => {
@@ -150,6 +179,17 @@ test("password change, logout, and new-password login work", async () => {
   await page.locator('button[type="submit"]').click();
   await page.waitForURL("**/dashboard");
   await page.getByText("E2E Test Dataset", { exact: true }).waitFor();
+});
+
+test("disposable account can be deleted and no longer authenticates", async () => {
+  await page.goto(`${BASE}/dashboard/settings`);
+  await page.getByRole("button", { name: "Delete account", exact: true }).click();
+  await page.getByPlaceholder("Your current password").fill(`${PASS}New`);
+  await page.getByPlaceholder("delete my account").fill("delete my account");
+  await page.getByRole("button", { name: "Permanently delete account" }).click();
+  await page.waitForURL(BASE + "/");
+  const res = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: EMAIL, password: `${PASS}New` }) });
+  assert.equal(res.status, 401);
 });
 
 test("signed-in journey has no uncaught browser errors", () => {
