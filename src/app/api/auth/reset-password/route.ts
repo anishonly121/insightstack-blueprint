@@ -119,17 +119,28 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
 
-    await prisma.$transaction(async (tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) => {
+    const consumed = await prisma.$transaction(async (tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) => {
+      // Claim the token atomically before changing credentials. Concurrent requests
+      // must not both succeed with the same reset link.
+      const claim = await tx.passwordResetToken.updateMany({
+        where: { id: resetToken.id, usedAt: null, expiresAt: { gt: new Date() } },
+        data: { usedAt: new Date() },
+      });
+      if (claim.count !== 1) return false;
       await tx.user.update({
         where: { id: user.id },
         data: { passwordHash },
       });
 
-      await tx.passwordResetToken.update({
-        where: { id: resetToken.id },
+      await tx.passwordResetToken.updateMany({
+        where: { userId: user.id, usedAt: null },
         data: { usedAt: new Date() },
       });
+      return true;
     });
+    if (!consumed) {
+      return errorResponseWithRequestId(requestId, 400, "INVALID_TOKEN", "Invalid reset token");
+    }
 
     await logAudit({
       userId: user.id,

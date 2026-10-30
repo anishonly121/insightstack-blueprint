@@ -25,7 +25,10 @@ try {
     await delay(300);
   }
   if (!ready) throw new Error("Demo test server did not become ready");
-  const child = spawn(process.execPath, ["--test", "tests/e2e/demo.test.mjs"], {
+  const suite = process.argv.includes("--authenticated")
+    ? "tests/e2e/full-journey.test.mjs"
+    : "tests/e2e/demo.test.mjs";
+  const child = spawn(process.execPath, ["--test", suite], {
     stdio: "inherit",
     env: { ...process.env, BASE_URL: url },
   });

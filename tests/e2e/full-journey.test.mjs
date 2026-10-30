@@ -5,8 +5,7 @@
  *   npm run build && npm start &   # or set BASE_URL to any running instance
  *   npm run test:e2e
  *
- * Set BASE_URL env var to run against the live deployment:
- *   BASE_URL=https://insightstack-peach.vercel.app npm run test:e2e
+ * Uses disposable accounts. Only run against an isolated local/CI database.
  */
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -16,16 +15,22 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+if (!["localhost", "127.0.0.1"].includes(new URL(BASE).hostname)) {
+  throw new Error("Run the account journey only against an isolated local/CI database.");
+}
 const DEMO_CSV = join(__dirname, "../../docs/demo-transactions.csv");
 const EMAIL = `e2e.${Date.now()}@test.insightstack.dev`;
 const PASS = "E2eTest123!";
 
 let browser, ctx, page;
+const pageErrors = [];
 
 before(async () => {
   browser = await chromium.launch({ headless: true });
   ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   page = await ctx.newPage();
+  page.setDefaultTimeout(15000);
+  page.on("pageerror", (error) => pageErrors.push(error.message));
 });
 
 after(async () => {
@@ -42,7 +47,7 @@ test("landing — hero heading renders", async () => {
 
 test("engineering page — step list renders", async () => {
   await page.goto(`${BASE}/how-it-works`, { waitUntil: "networkidle" });
-  const steps = page.locator("text=01");
+  const steps = page.getByText("01", { exact: true }).first();
   await steps.waitFor({ timeout: 5000 });
   assert.ok(await steps.isVisible(), "Step 01 should be visible on demo page");
 });
@@ -77,11 +82,10 @@ test("dashboard — dataset creation form is present", async () => {
 test("upload — CSV parses and dataset status advances to PARSED", async () => {
   await page.fill('input[placeholder*="January"]', "E2E Test Dataset");
   await page.click('button:has-text("Create")');
-  await page.waitForTimeout(2000);
+  await page.locator('input[type="file"]').first().waitFor();
 
   const fileInput = page.locator('input[type="file"]').first();
   await fileInput.setInputFiles(DEMO_CSV);
-  await page.waitForTimeout(500);
   await page.click('button:has-text("Upload CSV")');
 
   await page.waitForSelector("text=PARSED", { timeout: 20000 });
@@ -92,7 +96,7 @@ test("upload — CSV parses and dataset status advances to PARSED", async () => 
 test("dataset detail — navigates and renders financial data", async () => {
   await page.click('a:has-text("Open")');
   await page.waitForURL("**/dashboard/datasets/**", { timeout: 10000 });
-  await page.waitForTimeout(2000);
+  await page.getByRole("heading", { name: "Budget Tracker" }).waitFor();
   assert.ok(
     page.url().includes("/dashboard/datasets/"),
     "Should navigate to dataset detail page"
@@ -101,4 +105,53 @@ test("dataset detail — navigates and renders financial data", async () => {
   const body = await page.locator("body").textContent();
   assert.ok(body?.includes("$") || body?.includes("Income") || body?.includes("Expenses"),
     "Dataset detail should show financial metrics");
+});
+
+test("analysis streams, persists, and chat answers an actual dataset question", async () => {
+  const streamResponse = page.waitForResponse((res) => res.url().includes("/insights/stream"));
+  await page.getByRole("button", { name: /Generate Insights/ }).click();
+  assert.equal((await streamResponse).status(), 200);
+  await page.getByRole("button", { name: "Share", exact: true }).first().waitFor({ timeout: 30000 });
+  await page.reload();
+  await page.getByRole("button", { name: "Share", exact: true }).first().waitFor();
+  const chatResponse = page.waitForResponse((res) => res.url().endsWith("/chat"));
+  await page.getByPlaceholder("Ask about your spending…").fill("What is my savings rate?");
+  await page.getByPlaceholder("Ask about your spending…").press("Enter");
+  const response = await chatResponse;
+  assert.equal(response.status(), 200);
+  assert.ok((await response.text()).length > 40);
+});
+
+test("settings persist notification preferences and expose unavailable billing", async () => {
+  await page.goto(`${BASE}/dashboard/settings`);
+  const toggle = page.getByRole("switch", { name: "Weekly email digest" });
+  await toggle.waitFor();
+  const previous = await toggle.getAttribute("aria-checked");
+  const saved = page.waitForResponse((res) => res.url().endsWith("/notifications") && res.request().method() === "PATCH");
+  await toggle.click();
+  assert.equal((await saved).status(), 200);
+  await page.reload({ waitUntil: "networkidle" });
+  assert.notEqual(await toggle.getAttribute("aria-checked"), previous);
+  await page.getByRole("button", { name: /Upgrade to Pro/ }).click();
+  await page.getByRole("alert").filter({ hasText: "Payments are not yet enabled" }).waitFor();
+});
+
+test("password change, logout, and new-password login work", async () => {
+  await page.getByPlaceholder("Enter current password").fill(PASS);
+  await page.getByPlaceholder("Min. 8 characters").fill(`${PASS}New`);
+  await page.getByPlaceholder("Repeat new password").fill(`${PASS}New`);
+  await page.getByRole("button", { name: "Update password" }).click();
+  await page.getByText("Password changed successfully.").waitFor();
+  await page.goto(`${BASE}/dashboard`);
+  await page.getByRole("button", { name: "Logout" }).click();
+  await page.waitForURL("**/login");
+  await page.locator('input[type="email"]').fill(EMAIL);
+  await page.locator('input[autocomplete="current-password"]').fill(`${PASS}New`);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL("**/dashboard");
+  await page.getByText("E2E Test Dataset", { exact: true }).waitFor();
+});
+
+test("signed-in journey has no uncaught browser errors", () => {
+  assert.deepEqual(pageErrors, []);
 });

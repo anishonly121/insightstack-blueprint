@@ -82,3 +82,6 @@ jobs:
 
       - name: Verify public demo in browser
         run: npm run test:demo:ci
+
+      - name: Verify signed-in product journey
+        run: node scripts/test-demo.mjs --authenticated

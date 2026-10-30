@@ -145,6 +145,10 @@ export async function DELETE(req: Request): Promise<NextResponse> {
       return errorResponseWithRequestId(requestId, 400, "INVALID_CREDENTIALS", "Password is incorrect");
     }
 
+    // Preserve the billing relationship until cancellation is confirmed by Stripe.
+    if (dbUser.stripeSubscriptionId && !["canceled", "incomplete_expired"].includes(dbUser.stripeSubscriptionStatus ?? "")) {
+      return errorResponseWithRequestId(requestId, 409, "ACTIVE_SUBSCRIPTION", "Cancel your subscription in Manage billing before deleting your account. Wait until cancellation takes effect, then try again.");
+    }
     // Cascade delete — Prisma schema handles related rows
     await prisma.user.delete({ where: { id: user.id } });
 

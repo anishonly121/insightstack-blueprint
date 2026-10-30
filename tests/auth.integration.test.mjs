@@ -5,6 +5,8 @@ import { once } from "node:events";
 import net from "node:net";
 import process from "node:process";
 import test, { after, before } from "node:test";
+import { createHash, createHmac, randomBytes } from "node:crypto";
+import pg from "pg";
 
 const PORT_MIN = 3100;
 const PORT_MAX = 3999;
@@ -123,6 +125,10 @@ const startServerWithRetry = async () => {
       env: {
         ...process.env,
         PORT: `${port}`,
+        STRIPE_SECRET_KEY: "sk_test_local_webhook_verification_only",
+        STRIPE_WEBHOOK_SECRET: "whsec_local_integration_only",
+        STRIPE_PRO_PRICE_ID: "",
+        CRON_SECRET: "",
         OPENAI_API_KEY: process.env.OPENAI_API_KEY || "test",
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -269,4 +275,66 @@ test("POST /api/auth/forgot-password does not enumerate users", async () => {
 
   assert.equal(existingRes.status, missingRes.status);
   assert.deepEqual(existingRes.bodyJson, missingRes.bodyJson);
+});
+
+test("billing rejects cross-origin cookie requests and fails clearly without providers", async () => {
+  const login = await requestJson("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: userEmail, password }) });
+  const cookie = parseCookie(login.setCookie);
+  assert.ok(cookie);
+  for (const path of ["/api/stripe/checkout", "/api/stripe/portal"]) {
+    const blocked = await requestJson(path, { method: "POST", cookie, headers: { Origin: "https://untrusted.example" } });
+    assert.equal(blocked.status, 403);
+    const unavailable = await requestJson(path, { method: "POST", cookie, headers: { Origin: baseUrl } });
+    assert.equal(unavailable.status, 503);
+  }
+});
+
+test("scheduled mail fails closed without a configured secret", async () => {
+  const res = await requestJson("/api/cron/weekly-digest");
+  assert.equal(res.status, 503);
+});
+
+test("password reset can be consumed only once under concurrent requests", async () => {
+  const connectionString = process.env.DATABASE_URL;
+  assert.ok(connectionString);
+  assert.ok(["localhost", "127.0.0.1"].includes(new URL(connectionString).hostname), "Reset fixture requires an isolated local database");
+  const db = new pg.Client({ connectionString });
+  await db.connect();
+  const rawToken = randomBytes(48).toString("hex");
+  const hash = createHash("sha256").update(rawToken).digest("hex");
+  try {
+    await db.query('INSERT INTO "PasswordResetToken" (id, "userId", "tokenHash", "expiresAt", "createdAt") SELECT $1, id, $2, NOW() + INTERVAL \'30 minutes\', NOW() FROM "User" WHERE email = $3', [randomBytes(16).toString("hex"), hash, userEmail]);
+    const results = await Promise.all([1, 2].map((index) => requestJson("/api/auth/reset-password", {
+      method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": `203.0.113.${240 + index}` },
+      body: JSON.stringify({ email: userEmail, token: rawToken, newPassword: `${password}Reset` }),
+    })));
+    assert.deepEqual(results.map((res) => res.status).sort(), [200, 400]);
+    const login = await requestJson("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: userEmail, password: `${password}Reset` }) });
+    assert.equal(login.status, 200);
+  } finally { await db.end(); }
+});
+
+test("signed Stripe events update entitlement; forged events cannot", async () => {
+  const connectionString = process.env.DATABASE_URL;
+  assert.ok(["localhost", "127.0.0.1"].includes(new URL(connectionString).hostname));
+  const db = new pg.Client({ connectionString });
+  await db.connect();
+  const customer = `cus_test_${emailSeed}`;
+  try {
+    await db.query('UPDATE "User" SET "stripeCustomerId" = $1 WHERE email = $2', [customer, userEmail]);
+    const event = { id: `evt_${emailSeed}`, type: "customer.subscription.updated", data: { object: { id: "sub_test_local", customer, status: "active", items: { data: [{ price: { id: "price_test_local" }, current_period_end: Math.floor(Date.now() / 1000) + 86400 }] } } } };
+    const send = async (payload, valid) => {
+      const body = JSON.stringify(payload);
+      const timestamp = Math.floor(Date.now() / 1000);
+      const signature = createHmac("sha256", valid ? "whsec_local_integration_only" : "wrong").update(`${timestamp}.${body}`).digest("hex");
+      return requestJson("/api/stripe/webhooks", { method: "POST", headers: { "stripe-signature": `t=${timestamp},v1=${signature}` }, body });
+    };
+    assert.equal((await send(event, false)).status, 400);
+    assert.equal((await send(event, true)).status, 200);
+    let row = (await db.query('SELECT "stripeSubscriptionStatus" FROM "User" WHERE email = $1', [userEmail])).rows[0];
+    assert.equal(row.stripeSubscriptionStatus, "active");
+    assert.equal((await send({ ...event, type: "customer.subscription.deleted" }, true)).status, 200);
+    row = (await db.query('SELECT "stripeSubscriptionStatus" FROM "User" WHERE email = $1', [userEmail])).rows[0];
+    assert.equal(row.stripeSubscriptionStatus, "canceled");
+  } finally { await db.end(); }
 });

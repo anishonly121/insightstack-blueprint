@@ -129,12 +129,8 @@ export async function POST(req: Request): Promise<NextResponse> {
           // Keep forgot-password behavior stable in local/dev even without SendGrid keys.
         } else {
           logSendGridError("SENDGRID_SEND_FAILED", emailHash, requestMeta, err);
-          return errorResponseWithRequestId(
-            requestId,
-            502,
-            "SENDGRID_SEND_FAILED",
-            "Failed to send email",
-          );
+          // Keep the public response identical for existing and missing accounts,
+          // including provider outages. Operational failures are logged above.
         }
       }
     }

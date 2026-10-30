@@ -17,6 +17,9 @@ function currentMonthLabel(): string {
 export async function GET(req: Request): Promise<NextResponse> {
   // Verify caller is Vercel Cron (or an authorised manual trigger)
   const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json({ error: "Scheduled email is not configured" }, { status: 503 });
+  }
   if (cronSecret) {
     const authHeader = req.headers.get("Authorization");
     if (authHeader !== `Bearer ${cronSecret}`) {

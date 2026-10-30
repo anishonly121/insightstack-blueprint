@@ -117,6 +117,7 @@ Set `BASE_URL` to use another local server. Set `CAPTURE_SCREENSHOTS=1` to save 
 ```sh
 npm test           # PostgreSQL-backed API integration tests
 npm run test:e2e   # Authenticated user journey against a running app
+node scripts/test-demo.mjs --authenticated # Start/stop a production server for that journey
 ```
 
 Use a disposable test database for database-backed tests. Do not point them at a production account database. CI provisions PostgreSQL, runs migrations, builds, and executes the regression, browser, and integration suites.
@@ -135,6 +136,8 @@ Use a disposable test database for database-backed tests. Do not point them at a
 Statistical outliers are prompts for review, not fraud determinations. Forecasts extrapolate historical data and do not establish future outcomes. The health score and savings benchmarks are heuristics. Chat handles documented financial intents rather than arbitrary conversation. The demo is temporary browser state and resets on reload.
 
 Stripe billing, SendGrid email, and scheduled digest delivery require provider configuration. Public demo tests do not verify those services or database-backed account flows. Configure and test them separately before enabling them in production.
+
+The authenticated browser suite covers registration, CSV upload, persisted analysis, chat, notification preferences, password changes, and logout/login. API tests cover single-use reset tokens and signed Stripe subscription events. Provider tests use local fixtures and do not charge cards or verify delivery to a real inbox. Scheduled digest requests fail closed when `CRON_SECRET` is absent.
 
 Deployment uses the existing Vercel setup. The repository root is the Next.js application; configure environment variables, apply database migrations, and deploy the reviewed commit. Never commit `.env` files or provider credentials.
 
