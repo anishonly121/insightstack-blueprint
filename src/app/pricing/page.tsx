@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { LogoMark } from "@/components/LogoMark";
 import { api, getToken } from "@/lib/api";
 
@@ -43,7 +44,7 @@ const FAQS = [
   },
   {
     q: "How accurate are the AI insights?",
-    a: "Very. Unlike other tools, InsightStack computes all numbers from your actual transactions first — the AI only writes the narrative. No hallucinated figures.",
+    a: "Metrics are calculated from your transactions. The analysis engine uses statistical methods, rules, and explanation templates. Review the underlying transactions when making decisions; patterns and forecasts have limitations.",
   },
   {
     q: "Can I cancel anytime?",
@@ -51,7 +52,7 @@ const FAQS = [
   },
   {
     q: "Do you integrate with my bank?",
-    a: "Not yet — bank integrations are on the roadmap for Q3 2026. For now, export a CSV from your bank and upload it.",
+    a: "InsightStack uses CSV uploads. Export your transactions and arrange the documented date, description, category, and amount columns before importing.",
   },
 ];
 
@@ -64,20 +65,23 @@ function CheckIcon({ className }: { className?: string }) {
 }
 
 export default function PricingPage() {
+  const router = useRouter();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
+  const [checkoutError, setCheckoutError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const proPrice = billingPeriod === "annual" ? "$7" : "$9";
-  const proPeriod = billingPeriod === "annual" ? "/mo · billed $84/yr" : "/ month";
+  const proPrice = "$9";
+  const proPeriod = "/ month";
 
   const onUpgrade = async () => {
     setCheckoutLoading(true);
+    setCheckoutError("");
     try {
-      if (!getToken()) { window.location.href = "/register"; return; }
+      if (!getToken()) { router.push("/register"); return; }
       const res = await api.createCheckoutSession();
       window.location.href = res.data.url;
-    } catch {
+    } catch (err) {
+      setCheckoutError(err instanceof Error ? err.message : "Checkout is unavailable. Please try again later.");
       setCheckoutLoading(false);
     }
   };
@@ -120,34 +124,8 @@ export default function PricingPage() {
           </p>
         </div>
 
-        {/* Billing toggle */}
-        <div className="mb-10 flex items-center justify-center gap-3">
-          <span className={`text-sm font-medium transition-colors ${billingPeriod === "monthly" ? "text-white" : "text-zinc-500"}`}>
-            Monthly
-          </span>
-          <button
-            type="button"
-            onClick={() => setBillingPeriod(p => p === "monthly" ? "annual" : "monthly")}
-            aria-label="Toggle billing period"
-            className={`relative h-6 w-11 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050B18] ${billingPeriod === "annual" ? "bg-blue-500" : "bg-zinc-700"}`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${billingPeriod === "annual" ? "translate-x-5" : "translate-x-0"}`}
-            />
-          </button>
-          <span className={`text-sm font-medium transition-colors ${billingPeriod === "annual" ? "text-white" : "text-zinc-500"}`}>
-            Annual
-          </span>
-          <div
-            className="overflow-hidden transition-all duration-300"
-            style={{ maxWidth: billingPeriod === "annual" ? "90px" : "0px", opacity: billingPeriod === "annual" ? 1 : 0 }}
-          >
-            <span className="whitespace-nowrap rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/20">
-              Save 20%
-            </span>
-          </div>
-        </div>
-
+        <p className="mb-10 text-center text-sm text-zinc-400">Monthly billing. Review the final terms in checkout.</p>
+        {checkoutError && <p role="alert" className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm text-red-300">{checkoutError}</p>}
         {/* Plans */}
         <div className="grid gap-6 lg:grid-cols-2">
 

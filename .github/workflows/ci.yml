@@ -47,7 +47,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -58,6 +58,9 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+      - name: Analytics regression tests
+        run: npm run test:unit
 
       - name: Lint
         run: npm run lint
@@ -73,3 +76,9 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Install browser for public demo tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify public demo in browser
+        run: npm run test:demo:ci

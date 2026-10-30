@@ -772,8 +772,11 @@ function BudgetTracker({
 
 export default function DashboardDatasetDetailPage() {
   const params = useParams<{ id: string }>();
+  return <DatasetDetailContent key={params?.id ?? ""} id={params?.id ?? ""} />;
+}
+
+function DatasetDetailContent({ id }: { id: string }) {
   const router = useRouter();
-  const id = params?.id ?? "";
 
   const [dataset, setDataset] = useState<DatasetDetail | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -817,33 +820,29 @@ export default function DashboardDatasetDetailPage() {
     setInsightPage(page);
   }, [id]);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    if (!getToken()) { router.replace("/login"); return; }
     if (!id) return;
-    setError("");
-    setLoading(true);
-    try {
-      const [datasetRes, metricsRes, quotaRes, budgetsRes] = await Promise.all([
-        api.getDataset(id),
-        api.getMetrics(id).catch(() => null),
-        api.quota().catch(() => null),
-        api.listBudgets().catch(() => null),
-      ]);
+    let cancelled = false;
+    void Promise.all([
+      api.getDataset(id),
+      api.getMetrics(id).catch(() => null),
+      api.quota().catch(() => null),
+      api.listBudgets().catch(() => null),
+    ]).then(async ([datasetRes, metricsRes, quotaRes, budgetsRes]) => {
+      if (cancelled) return;
       setDataset(datasetRes.data);
       if (metricsRes) setMetrics(metricsRes.data.metricsJson);
       if (quotaRes) setQuota(quotaRes.data);
       if (budgetsRes) setBudgets(budgetsRes.data);
       await Promise.all([loadTransactions(1, "", ""), loadInsights(1)]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dataset");
-    } finally {
-      setLoading(false);
-    }
-  }, [id, loadTransactions, loadInsights]);
-
-  useEffect(() => {
-    if (!getToken()) { router.replace("/login"); return; }
-    void load();
-  }, [id, router, load]);
+    }).catch((err) => {
+      if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load dataset");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [id, router, loadTransactions, loadInsights]);
 
   const onUpsertBudget = async (category: string, limit: number) => {
     const res = await api.upsertBudget(category, limit);

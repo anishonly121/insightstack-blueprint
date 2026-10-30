@@ -1,5 +1,4 @@
-import { Prisma } from "@prisma/client";
-
+export const METRICS_VERSION = 2;
 export type CategoryStat = { category: string; total: number; count: number };
 export type MonthStat = { month: string; income: number; expenses: number; net: number };
 export type AnomalyStat = {
@@ -11,6 +10,7 @@ export type AnomalyStat = {
 };
 
 export type MetricsJson = {
+  calculationVersion?: number;
   totalIncome: number;
   totalExpenses: number;
   netSavings: number;
@@ -21,8 +21,10 @@ export type MetricsJson = {
   monthlyBreakdown: MonthStat[];
 };
 
-type MetricsTx = { date: Date; category: string; amount: Prisma.Decimal };
-type AnomalyTx = { date: Date; description: string; category: string; amount: Prisma.Decimal };
+// Structural amount type supports Prisma.Decimal and browser demo numbers without
+// pulling a database client into the browser bundle.
+type MetricsTx = { date: Date; category: string; amount: { toString(): string } };
+type AnomalyTx = MetricsTx & { description: string };
 
 export function computeMetrics(transactions: MetricsTx[]): MetricsJson {
   let totalIncome = 0;
@@ -39,9 +41,11 @@ export function computeMetrics(transactions: MetricsTx[]): MetricsJson {
       totalExpenses += Math.abs(amount);
     }
 
-    const cat = tx.category.trim() || "Uncategorized";
-    const existing = categoryMap.get(cat) ?? { total: 0, count: 0 };
-    categoryMap.set(cat, { total: existing.total + amount, count: existing.count + 1 });
+    if (amount < 0) {
+      const cat = tx.category.trim() || "Uncategorized";
+      const existing = categoryMap.get(cat) ?? { total: 0, count: 0 };
+      categoryMap.set(cat, { total: existing.total + amount, count: existing.count + 1 });
+    }
 
     const month = tx.date.toISOString().slice(0, 7);
     const m = monthMap.get(month) ?? { income: 0, expenses: 0 };
@@ -64,8 +68,9 @@ export function computeMetrics(transactions: MetricsTx[]): MetricsJson {
       total: Number(v.total.toFixed(2)),
       count: v.count,
     }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 10);
+    // Keep all expense categories for accurate concentration and budget math.
+    // Negative totals are retained for compatibility with existing consumers.
+    .sort((a, b) => a.total - b.total);
 
   const monthlyBreakdown: MonthStat[] = [...monthMap.entries()]
     .map(([month, v]) => ({
@@ -77,6 +82,7 @@ export function computeMetrics(transactions: MetricsTx[]): MetricsJson {
     .sort((a, b) => a.month.localeCompare(b.month));
 
   return {
+    calculationVersion: METRICS_VERSION,
     totalIncome: Number(totalIncome.toFixed(2)),
     totalExpenses: Number(totalExpenses.toFixed(2)),
     netSavings: Number(netSavings.toFixed(2)),
@@ -89,6 +95,8 @@ export function computeMetrics(transactions: MetricsTx[]): MetricsJson {
 }
 
 export function detectAnomalies(transactions: AnomalyTx[], topN = 5): AnomalyStat[] {
+  // Income is not a spending anomaly and must not distort its baseline.
+  transactions = transactions.filter((t) => Number(t.amount.toString()) < 0);
   if (transactions.length < 3) return [];
 
   const amounts = transactions.map((t) => Math.abs(Number(t.amount.toString())));

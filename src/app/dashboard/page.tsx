@@ -352,8 +352,10 @@ export default function DashboardPage() {
   // Use refs so loadDatasets always reads current search/sort without stale closures
   const searchRef = useRef(datasetSearch);
   const sortRef = useRef(datasetSort);
-  searchRef.current = datasetSearch;
-  sortRef.current = datasetSort;
+  useEffect(() => {
+    searchRef.current = datasetSearch;
+    sortRef.current = datasetSort;
+  }, [datasetSearch, datasetSort]);
 
   const hasDatasets = useMemo(() => datasets.length > 0, [datasets.length]);
 

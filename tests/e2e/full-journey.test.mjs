@@ -40,8 +40,8 @@ test("landing — hero heading renders", async () => {
   assert.ok(heading && heading.length > 10, `Expected hero h1, got: "${heading}"`);
 });
 
-test("demo page — step list renders", async () => {
-  await page.goto(`${BASE}/demo`, { waitUntil: "networkidle" });
+test("engineering page — step list renders", async () => {
+  await page.goto(`${BASE}/how-it-works`, { waitUntil: "networkidle" });
   const steps = page.locator("text=01");
   await steps.waitFor({ timeout: 5000 });
   assert.ok(await steps.isVisible(), "Step 01 should be visible on demo page");

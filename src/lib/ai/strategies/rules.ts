@@ -47,7 +47,7 @@ const RULES: Rule[] = [
         type: 'rule',
         severity: 'info',
         title: 'Savings rate below 20% target',
-        body: `Your savings rate is ${metrics.savingsRate.toFixed(1)}%. The standard benchmark is 20%. Closing the gap by $${((0.20 * metrics.totalIncome) - metrics.netSavings).toFixed(2)} per month would hit the target.`,
+        body: `Your savings rate is ${metrics.savingsRate.toFixed(1)}%. Against an illustrative 20% target, the gap is $${(((0.20 * metrics.totalIncome) - metrics.netSavings) / Math.max(metrics.monthlyBreakdown.length, 1)).toFixed(2)} per recorded month. Choose a target that fits your circumstances.`,
         confidence: 0.9,
         tags: ['savings', 'info', 'target'],
       };
@@ -62,7 +62,7 @@ const RULES: Rule[] = [
         type: 'rule',
         severity: 'info',
         title: 'Healthy savings rate',
-        body: `Your savings rate of ${metrics.savingsRate.toFixed(1)}% meets the standard 20% benchmark. Ensure these savings are deployed into interest-bearing accounts or investments rather than sitting idle.`,
+        body: `Your savings rate of ${metrics.savingsRate.toFixed(1)}% exceeds the illustrative 20% target. Check whether this period includes one-off income or expenses before using it as a planning baseline.`,
         confidence: 0.85,
         tags: ['savings', 'info', 'positive'],
       };
@@ -77,7 +77,7 @@ const RULES: Rule[] = [
         type: 'rule',
         severity: 'info',
         title: 'Excellent savings rate',
-        body: `Your savings rate of ${metrics.savingsRate.toFixed(1)}% significantly exceeds the 20% target. At this rate you are on a strong path to financial independence. Confirm these savings are invested, not sitting in a low-yield account.`,
+        body: `You retained ${metrics.savingsRate.toFixed(1)}% of income in this dataset. Compare the monthly breakdown to see whether that surplus is consistent or driven by a one-off payment.`,
         confidence: 0.9,
         tags: ['savings', 'info', 'excellent'],
       };
