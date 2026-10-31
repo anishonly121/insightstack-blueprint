@@ -1,6 +1,6 @@
 import "server-only";
-import sgMail from "@sendgrid/mail";
-import { env } from "@/lib/env";
+import { sendEmail } from "@/lib/mail";
+import { escapeEmailHtml } from "@/lib/email-content";
 
 export type DigestData = {
   to: string;
@@ -37,7 +37,7 @@ function buildHtml(d: DigestData): string {
             <td width="10">
               <div style="width:8px;height:8px;border-radius:50%;background:${dot};margin-top:2px;"></div>
             </td>
-            <td style="padding-left:10px;font-size:13px;color:#1E293B;font-weight:600;">${c.category}</td>
+            <td style="padding-left:10px;font-size:13px;color:#1E293B;font-weight:600;">${escapeEmailHtml(c.category)}</td>
             <td align="right" style="font-size:13px;color:#475569;white-space:nowrap;">
               ${$(c.total)} <span style="color:#94A3B8;font-size:11px;">(${pct}%)</span>
             </td>
@@ -58,7 +58,7 @@ function buildHtml(d: DigestData): string {
           .map(
             (b) => `
           <p style="margin:0 0 6px;font-size:13px;color:#7F1D1D;">
-            <strong>${b.category}</strong> — ${$(b.spent)} spent of ${$(b.limit)} budget
+            <strong>${escapeEmailHtml(b.category)}</strong> — ${$(b.spent)} spent of ${$(b.limit)} budget
             (${((b.spent / b.limit) * 100).toFixed(0)}%)
           </p>`,
           )
@@ -72,7 +72,7 @@ function buildHtml(d: DigestData): string {
       <p style="margin:0 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#1D4ED8;">
         💡 AI Recommendation
       </p>
-      <p style="margin:0;font-size:13px;color:#1E3A8A;line-height:1.6;">${d.topRecommendation}</p>
+      <p style="margin:0;font-size:13px;color:#1E3A8A;line-height:1.6;">${escapeEmailHtml(d.topRecommendation)}</p>
     </div>`
     : "";
 
@@ -97,7 +97,7 @@ function buildHtml(d: DigestData): string {
           </span>
         </td>
         <td align="right">
-          <span style="font-size:11px;color:#475569;">${d.month} · Weekly Digest</span>
+          <span style="font-size:11px;color:#475569;">${escapeEmailHtml(d.month)} · Weekly Digest</span>
         </td>
       </tr></table>
       <div style="margin-top:20px;">
@@ -105,7 +105,7 @@ function buildHtml(d: DigestData): string {
           Your spending summary 📊
         </h1>
         <p style="margin:6px 0 0;font-size:13px;color:#64748B;">
-          Hi ${d.name}, here's what happened in <strong style="color:#94A3B8;">${d.datasetName}</strong>.
+          Hi ${escapeEmailHtml(d.name)}, here's what happened in <strong style="color:#94A3B8;">${escapeEmailHtml(d.datasetName)}</strong>.
         </p>
       </div>
     </td></tr>
@@ -146,7 +146,7 @@ function buildHtml(d: DigestData): string {
 
       <!-- CTA -->
       <div style="text-align:center;margin-top:8px;">
-        <a href="${d.dashboardUrl}/dashboard" style="display:inline-block;background:#3B82F6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:14px 36px;border-radius:12px;letter-spacing:-0.2px;box-shadow:0 4px 15px rgba(59,130,246,0.35);">
+        <a href="${escapeEmailHtml(d.dashboardUrl)}/dashboard" style="display:inline-block;background:#3B82F6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:14px 36px;border-radius:12px;letter-spacing:-0.2px;box-shadow:0 4px 15px rgba(59,130,246,0.35);">
           Open Dashboard →
         </a>
       </div>
@@ -157,9 +157,9 @@ function buildHtml(d: DigestData): string {
     <tr><td style="background:#F8FAFC;border-radius:0 0 16px 16px;padding:20px 36px;border-top:1px solid #E2E8F0;">
       <p style="margin:0;font-size:11px;color:#94A3B8;text-align:center;line-height:1.8;">
         Sent weekly by <strong>InsightStack</strong> · AI-powered finance analytics<br>
-        <a href="${d.dashboardUrl}/dashboard/settings" style="color:#60A5FA;text-decoration:none;">Manage notifications</a>
+        <a href="${escapeEmailHtml(d.dashboardUrl)}/dashboard/settings" style="color:#60A5FA;text-decoration:none;">Manage notifications</a>
         &nbsp;·&nbsp;
-        <a href="${d.dashboardUrl}/dashboard" style="color:#60A5FA;text-decoration:none;">View dashboard</a>
+        <a href="${escapeEmailHtml(d.dashboardUrl)}/dashboard" style="color:#60A5FA;text-decoration:none;">View dashboard</a>
       </p>
     </td></tr>
 
@@ -171,20 +171,10 @@ function buildHtml(d: DigestData): string {
 }
 
 export async function sendWeeklyDigest(data: DigestData): Promise<void> {
-  const apiKey = env.SENDGRID_API_KEY;
-  const fromEmail = env.SENDGRID_FROM_EMAIL;
-
-  if (!apiKey || !fromEmail) {
-    throw new Error("SendGrid not configured");
-  }
-
-  sgMail.setApiKey(apiKey);
-
   const subject = `Your InsightStack weekly digest — ${data.month}`;
 
-  await sgMail.send({
+  await sendEmail({
     to: data.to,
-    from: { email: fromEmail, name: "InsightStack" },
     subject,
     html: buildHtml(data),
     text: [

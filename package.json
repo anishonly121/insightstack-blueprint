@@ -7,7 +7,7 @@
         "build": "prisma generate && next build",
         "start": "next start",
         "type-check": "tsc --noEmit",
-        "test:unit": "node --test tests/analytics.unit.test.cjs",
+        "test:unit": "node --test tests/analytics.unit.test.cjs tests/email.unit.test.cjs",
         "test:demo": "node --test tests/e2e/demo.test.mjs",
         "test:demo:ci": "node scripts/test-demo.mjs",
         "test": "node --test --test-concurrency=1 tests/admin.integration.test.mjs tests/auth.integration.test.mjs tests/datasets.integration.test.mjs tests/metrics.integration.test.mjs",

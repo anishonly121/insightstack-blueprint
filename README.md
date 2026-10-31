@@ -145,7 +145,9 @@ Use a disposable test database for database-backed tests. Do not point them at a
 
 Statistical outliers are prompts for review, not fraud determinations. Forecasts extrapolate historical data and do not establish future outcomes. The health score and savings benchmarks are heuristics. Chat handles documented financial intents rather than arbitrary conversation. The demo is temporary browser state and resets on reload.
 
-Stripe billing, SendGrid email, and scheduled digest delivery require provider configuration. Public demo tests do not verify those services or database-backed account flows. Configure and test them separately before enabling them in production.
+Stripe billing, transactional email, and scheduled digest delivery require provider configuration. Public demo tests do not verify those services or database-backed account flows. Configure and test them separately before enabling them in production.
+
+For Brevo's free email plan, set `BREVO_API_KEY` (Secret) and `EMAIL_FROM` (your verified sender) in Vercel Production, then redeploy. Brevo takes priority when its key is present; provider failures do not silently switch to SendGrid. Password-reset and notification emails are rendered by the app, so no external template ID is needed. Weekly digests use the same provider and still require `CRON_SECRET`. Keep the account on its Free plan without paid add-ons. Provider approval, daily limits, and sender verification still apply; confirm real inbox delivery after configuration. Existing SendGrid configuration remains supported when the Brevo key is absent.
 
 The authenticated browser suite covers registration, CSV upload, persisted analysis, chat, notification preferences, password changes, and logout/login. API tests cover single-use reset tokens and signed Stripe subscription events. Provider tests use local fixtures and do not charge cards or verify delivery to a real inbox. Scheduled digest requests fail closed when `CRON_SECRET` is absent.
 

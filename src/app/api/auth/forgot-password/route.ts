@@ -20,13 +20,13 @@ const hashEmailForLog = (email: string): string => {
   return createHash("sha256").update(email).digest("hex");
 };
 
-const logSendGridError = (
-  code: "SENDGRID_NOT_CONFIGURED" | "SENDGRID_SEND_FAILED",
+const logEmailError = (
+  code: "EMAIL_NOT_CONFIGURED" | "EMAIL_SEND_FAILED",
   emailHash: string,
   requestMeta: Record<string, string>,
   err?: unknown,
 ): void => {
-  logger.error("FORGOT_PASSWORD_SENDGRID_ERROR", {
+  logger.error("FORGOT_PASSWORD_EMAIL_ERROR", {
     code,
     emailHash,
     ip: requestMeta.ip,
@@ -124,11 +124,11 @@ export async function POST(req: Request): Promise<NextResponse> {
           resetLink,
         });
       } catch (err) {
-        if (err instanceof Error && err.message === "SENDGRID_NOT_CONFIGURED") {
-          logSendGridError("SENDGRID_NOT_CONFIGURED", emailHash, requestMeta, err);
-          // Keep forgot-password behavior stable in local/dev even without SendGrid keys.
+        if (err instanceof Error && ["SENDGRID_NOT_CONFIGURED", "EMAIL_NOT_CONFIGURED"].includes(err.message)) {
+          logEmailError("EMAIL_NOT_CONFIGURED", emailHash, requestMeta, err);
+          // Keep forgot-password behavior stable in local/dev even without email-provider keys.
         } else {
-          logSendGridError("SENDGRID_SEND_FAILED", emailHash, requestMeta, err);
+          logEmailError("EMAIL_SEND_FAILED", emailHash, requestMeta, err);
           // Keep the public response identical for existing and missing accounts,
           // including provider outages. Operational failures are logged above.
         }
