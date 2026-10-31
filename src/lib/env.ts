@@ -12,6 +12,8 @@ const envSchema = z.object({
   DIRECT_URL: z.string().min(1, "DIRECT_URL is required"),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   NEXT_PUBLIC_APP_URL: z.string().min(1, "NEXT_PUBLIC_APP_URL is required"),
+  BREVO_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  EMAIL_FROM: z.preprocess(emptyToUndefined, z.string().email().optional()),
   SENDGRID_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   SENDGRID_FROM_EMAIL: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   SENDGRID_TEMPLATE_RESET_PASSWORD: z.preprocess(emptyToUndefined, z.string().min(1).optional()),

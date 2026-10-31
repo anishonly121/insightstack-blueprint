@@ -31,7 +31,7 @@ export default function PrivacyPage() {
             <h2 className="mb-3 text-lg font-bold text-white">2. How we use your data</h2>
             <ul className="space-y-2 leading-relaxed">
               <li className="flex gap-2"><span className="text-blue-400 flex-shrink-0">·</span> To provide the InsightStack analytics service, including AI-generated spending insights.</li>
-              <li className="flex gap-2"><span className="text-blue-400 flex-shrink-0">·</span> To send transactional emails (password resets, account notifications) via SendGrid.</li>
+              <li className="flex gap-2"><span className="text-blue-400 flex-shrink-0">·</span> To send transactional emails (password resets, account notifications) through the configured email provider, Brevo or SendGrid. That provider receives the recipient address and email content.</li>
               <li className="flex gap-2"><span className="text-blue-400 flex-shrink-0">·</span> To improve the platform through aggregated, anonymised usage metrics.</li>
             </ul>
           </section>
