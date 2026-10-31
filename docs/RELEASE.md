@@ -27,3 +27,7 @@ Verified on 2026-11-01 (Asia/Singapore). Production application: https://insight
 3. Configure an isolated Preview database, `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, and the correct application URL before relying on pull-request preview deployments. The production variables are currently scoped to Production. Do not point disposable integration tests at the production database.
 
 The local and CI suites use isolated databases. Live password-reset delivery was verified separately. Passing these tests does not establish real payment settlement, full billing lifecycle correctness, customer usage, or the absence of all bugs.
+
+## Dependency audit
+
+The production dependency audit reported no critical, high, or moderate findings and four low-severity package entries from one `deepmerge` prototype-poisoning advisory in the retained SendGrid SDK chain (GHSA-gcqx-w48m-w2h4). Brevo is the configured production mail provider. The latest published deepmerge release is still 4.3.1; npm proposes a major SendGrid downgrade rather than a patched compatible release. This remains a maintenance item and was not automatically downgraded during release verification.
