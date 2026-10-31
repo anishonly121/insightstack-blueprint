@@ -1134,8 +1134,8 @@ function DatasetDetailContent({ id }: { id: string }) {
                   {search || categoryFilter ? "No transactions match your filter." : "No transactions yet. Upload a CSV from the dashboard."}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
+                <div className="overflow-x-auto" role="region" aria-label="Transactions, scroll horizontally on smaller screens" tabIndex={0}>
+                  <table className="transaction-table min-w-full text-sm">
                     <thead>
                       <tr className="border-b border-white/5 bg-zinc-800/50 text-left text-xs font-bold uppercase tracking-widest text-zinc-600">
                         <th className="px-4 py-3">Date</th>

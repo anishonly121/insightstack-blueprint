@@ -252,6 +252,18 @@
 .workspace-content input {
   min-width: 0;
 }
+.workspace-content .transaction-table {
+  min-width: 620px;
+  overflow-wrap: normal;
+}
+.workspace-content .transaction-table th,
+.workspace-content .transaction-table td:last-child,
+.workspace-content .transaction-table td:nth-child(3) {
+  white-space: nowrap;
+}
+.workspace-content .recharts-tooltip-wrapper[style*="visibility: hidden"] {
+  display: none;
+}
 .workspace-content .flex > * {
   min-width: 0;
 }

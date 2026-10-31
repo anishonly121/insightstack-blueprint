@@ -25,6 +25,8 @@ if (!["localhost", "127.0.0.1"].includes(new URL(BASE).hostname)) {
 const DEMO_CSV = join(__dirname, "../../docs/demo-transactions.csv");
 const EMAIL = `e2e.${Date.now()}@test.insightstack.dev`;
 const PASS = "E2eTest123!";
+// Keep browser traffic separate from the API suite without bypassing rate limits.
+const TEST_IP = "198.51.100.90";
 let activePassword = PASS;
 
 let browser, ctx, page;
@@ -32,7 +34,7 @@ const pageErrors = [];
 
 before(async () => {
   browser = await chromium.launch({ headless: true });
-  ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, extraHTTPHeaders: { "x-forwarded-for": TEST_IP } });
   page = await ctx.newPage();
   page.setDefaultTimeout(15000);
   page.on("pageerror", (error) => pageErrors.push(error.message));
@@ -221,7 +223,7 @@ test("password recovery form consumes a local reset link and accepts the new pas
   await page.getByRole("button", { name: "Update password" }).click();
   await page.getByRole("heading", { name: "Your password is updated." }).waitFor();
   activePassword = `${PASS}Recovered`;
-  const response = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: EMAIL, password: activePassword }) });
+  const response = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": TEST_IP }, body: JSON.stringify({ email: EMAIL, password: activePassword }) });
   assert.equal(response.status, 200);
 });
 
@@ -232,7 +234,7 @@ test("disposable account can be deleted and no longer authenticates", async () =
   await page.getByPlaceholder("delete my account").fill("delete my account");
   await page.getByRole("button", { name: "Permanently delete account" }).click();
   await page.waitForURL(BASE + "/");
-  const res = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: EMAIL, password: activePassword }) });
+  const res = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json", "x-forwarded-for": TEST_IP }, body: JSON.stringify({ email: EMAIL, password: activePassword }) });
   assert.equal(res.status, 401);
 });
 
