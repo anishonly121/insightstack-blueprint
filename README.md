@@ -6,7 +6,7 @@ InsightStack is a full-stack finance analytics project by **Anish Bhole**. It co
 
 [Live application](https://insightstack-peach.vercel.app) · [Interactive demo](https://insightstack-peach.vercel.app/demo) · [Engineering walkthrough](https://insightstack-peach.vercel.app/how-it-works)
 
-> The updated experience in this branch is available locally. The public links reflect the version most recently deployed to Vercel.
+> The redesigned experience is deployed to Vercel. Core account and analytics flows have been verified in production. See [release verification](docs/RELEASE.md) for evidence and remaining email/payment setup.
 
 ## A two-minute tour
 
@@ -21,7 +21,7 @@ The demo contains fictional data. It uses the **same metrics and insight functio
 
 ![Interactive workspace](docs/screenshots/recruiter-overview.png)
 
-[Landing page preview](docs/screenshots/recruiter-landing.png) · [Mobile preview](docs/screenshots/recruiter-mobile.png) · [Signed-in analysis preview](docs/screenshots/recruiter-account.png)
+[Landing page preview](docs/screenshots/recruiter-landing.png) · [Mobile preview](docs/screenshots/recruiter-mobile.png) · [Signed-in analysis preview](docs/screenshots/recruiter-account.png) · [Mobile account preview](docs/screenshots/recruiter-account-mobile.png) · [Pricing preview](docs/screenshots/recruiter-pricing.png)
 
 ## What the project demonstrates
 
