@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { sendWeeklyDigest, type DigestData } from "@/lib/digest";
-import type { MetricsJson } from "@/lib/metrics";
+import { computeMetrics } from "@/lib/metrics";
 import type { InsightPayload } from "@/app/api/datasets/[id]/insights/route";
 
 // Vercel Cron: runs every Monday at 08:00 UTC (configured in vercel.json)
@@ -10,13 +10,12 @@ import type { InsightPayload } from "@/app/api/datasets/[id]/insights/route";
 
 const MAX_USERS_PER_RUN = 100;
 
-function currentMonthLabel(): string {
-  return new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
-}
-
 export async function GET(req: Request): Promise<NextResponse> {
   // Verify caller is Vercel Cron (or an authorised manual trigger)
   const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json({ error: "Scheduled email is not configured" }, { status: 503 });
+  }
   if (cronSecret) {
     const authHeader = req.headers.get("Authorization");
     if (authHeader !== `Bearer ${cronSecret}`) {
@@ -38,7 +37,6 @@ export async function GET(req: Request): Promise<NextResponse> {
   });
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://insightstack-peach.vercel.app";
-  const month = currentMonthLabel();
 
   let sent = 0;
   let skipped = 0;
@@ -58,7 +56,18 @@ export async function GET(req: Request): Promise<NextResponse> {
         continue;
       }
 
-      const metrics = snapshot.metricsJson as unknown as MetricsJson;
+      const latest = await prisma.transaction.findFirst({
+        where: { datasetId: snapshot.datasetId }, orderBy: { date: "desc" }, select: { date: true },
+      });
+      if (!latest) { skipped++; continue; }
+      const monthStart = new Date(Date.UTC(latest.date.getUTCFullYear(), latest.date.getUTCMonth(), 1));
+      const monthEnd = new Date(Date.UTC(latest.date.getUTCFullYear(), latest.date.getUTCMonth() + 1, 1));
+      const transactions = await prisma.transaction.findMany({
+        where: { datasetId: snapshot.datasetId, date: { gte: monthStart, lt: monthEnd } },
+        select: { date: true, category: true, amount: true },
+      });
+      const metrics = computeMetrics(transactions);
+      const month = monthStart.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 
       // Budget data for over-budget detection
       const budgets = await prisma.budget.findMany({
@@ -77,7 +86,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
       // Most recent AI recommendation
       const latestInsight = await prisma.insight.findFirst({
-        where: { dataset: { userId: user.id } },
+        where: { datasetId: snapshot.datasetId },
         orderBy: { createdAt: "desc" },
         select: { insightJson: true },
       });
@@ -122,7 +131,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     }
   }
 
-  const result = { sent, skipped, failed, total: users.length, month };
+  const result = { sent, skipped, failed, total: users.length };
   logger.info("CRON_DIGEST_DONE", result);
   return NextResponse.json(result);
 }

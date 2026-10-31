@@ -35,5 +35,7 @@ InsightStack is built with security as a first-class concern:
 
 ## Known limitations
 
+- The dependency review on 2026-10-30 resolved the reported critical, high, and moderate advisories. Four low-severity audit entries remain in the optional SendGrid SDK dependency chain (`deepmerge`, `@sendgrid/helpers`, `@sendgrid/client`, `@sendgrid/mail`), all stemming from [GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4). npm currently proposes a breaking downgrade of SendGrid rather than a compatible fix. Review this upstream dependency before enabling production email delivery; do not use `npm audit fix --force` without testing the email integration.
+
 - JWTs cannot be revoked before expiry; logout clears the HttpOnly cookie but a stolen Bearer token remains valid until expiry
 - Rate limiting uses PostgreSQL rather than Redis; very high concurrency could cause write contention on `RateLimitBucket`

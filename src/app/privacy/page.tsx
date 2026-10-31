@@ -38,22 +38,22 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="mb-3 text-lg font-bold text-white">3. AI processing & PII</h2>
-            <p className="leading-relaxed">Before any transaction data is processed by the FinanceAI engine, personally identifiable information (names, account numbers, reference codes) is redacted server-side. All AI analysis runs in-process — your data is never sent to any external AI service. We do not share identifiable financial data with third parties for advertising or profiling purposes.</p>
+            <p className="leading-relaxed">The FinanceAI engine processes transaction descriptions, categories, dates, and amounts inside the application. It does not send these records to an external language-model service. Do not include bank account numbers or other unnecessary identifiers in your CSV: automatic removal of personal information is not guaranteed. If you choose to share an insight, its report and dataset name become accessible to anyone with that link until you revoke it.</p>
           </section>
 
           <section>
             <h2 className="mb-3 text-lg font-bold text-white">4. Data storage & security</h2>
-            <p className="leading-relaxed">Data is stored in a PostgreSQL database hosted on Neon (Vercel Postgres). Passwords are hashed with bcrypt. All data is transmitted over HTTPS/TLS. Access tokens are short-lived JWTs. We apply rate limiting and CSRF protection across all mutating endpoints.</p>
+            <p className="leading-relaxed">Account and transaction data is stored in PostgreSQL. Passwords are hashed with bcrypt. Authentication uses a session cookie and JWTs that expire after seven days. Account routes check ownership, and sensitive operations use request validation and rate limits. Use the HTTPS production site when uploading real data; a local development instance is separate from the hosted service.</p>
           </section>
 
           <section>
             <h2 className="mb-3 text-lg font-bold text-white">5. Your rights</h2>
-            <p className="leading-relaxed">You can delete your account and all associated data at any time by contacting us at <a href="mailto:bholeanish3@gmail.com" className="text-blue-400 hover:text-blue-300">bholeanish3@gmail.com</a>. We will action deletion requests within 30 days.</p>
+            <p className="leading-relaxed">You can export transactions and delete your account and associated application records in account settings. An active subscription must be canceled before account deletion. For help or questions about data requests, contact <a href="mailto:bholeanish3@gmail.com" className="text-blue-400 hover:text-blue-300">bholeanish3@gmail.com</a>.</p>
           </section>
 
           <section>
             <h2 className="mb-3 text-lg font-bold text-white">6. Cookies</h2>
-            <p className="leading-relaxed">We use a single session cookie to maintain your authenticated state. We do not use advertising cookies or third-party tracking scripts.</p>
+            <p className="leading-relaxed">We use a session cookie to maintain your authenticated state. The application includes Vercel Web Analytics for usage measurement. Payment and email providers also process information needed to provide their respective services when those features are enabled.</p>
           </section>
 
           <section>

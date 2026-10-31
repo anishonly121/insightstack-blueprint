@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/auth";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
-import { computeMetrics } from "@/lib/metrics";
+import { computeMetrics, METRICS_VERSION, type MetricsJson } from "@/lib/metrics";
 
 export type { MetricsJson } from "@/lib/metrics";
 
@@ -44,7 +44,7 @@ export async function GET(
       select: { id: true, computedAt: true, metricsJson: true },
     });
 
-    if (cached) {
+    if (cached && (cached.metricsJson as MetricsJson)?.calculationVersion === METRICS_VERSION) {
       return jsonWithRequestId(requestId, {
         data: { ...cached, cached: true },
       });

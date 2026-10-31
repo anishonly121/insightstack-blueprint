@@ -137,16 +137,7 @@ export type PaginatedMeta = {
 export type CategoryStat = { category: string; total: number; count: number };
 export type MonthStat = { month: string; income: number; expenses: number; net: number };
 
-export type MetricsJson = {
-  totalIncome: number;
-  totalExpenses: number;
-  netSavings: number;
-  savingsRate: number;
-  transactionCount: number;
-  avgTransaction: number;
-  topCategories: CategoryStat[];
-  monthlyBreakdown: MonthStat[];
-};
+export type MetricsJson = import("./metrics").MetricsJson;
 
 export type MetricSnapshot = {
   id: string;

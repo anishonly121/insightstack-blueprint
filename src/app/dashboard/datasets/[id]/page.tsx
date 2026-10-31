@@ -133,7 +133,7 @@ function InsightCard({ insight, datasetId, datasetName }: { insight: Insight; da
 
   return (
     <article className="overflow-hidden rounded-xl border border-white/6 bg-zinc-900 transition-all hover:border-white/10">
-      <div className="flex items-center justify-between border-b border-white/5 bg-gradient-to-r from-cyan-500/5 to-transparent px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 bg-gradient-to-r from-cyan-500/5 to-transparent px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/20">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -619,9 +619,10 @@ function computeForecast(monthlyBreakdown: MetricsJson["monthlyBreakdown"]): {
 // ── Budget tracker ────────────────────────────────────────────────────────────
 
 function BudgetTracker({
-  categories, budgets, onUpsert, onDelete,
+  categories, month, budgets, onUpsert, onDelete,
 }: {
   categories: MetricsJson["topCategories"];
+  month: string;
   budgets: Budget[];
   onUpsert: (category: string, limit: number) => Promise<void>;
   onDelete: (category: string) => Promise<void>;
@@ -629,6 +630,7 @@ function BudgetTracker({
   const [editing, setEditing] = useState<string | null>(null);
   const [inputVal, setInputVal] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
+  const [budgetError, setBudgetError] = useState("");
 
   const budgetMap = new Map(budgets.map((b) => [b.category, b.monthlyLimit]));
 
@@ -642,12 +644,18 @@ function BudgetTracker({
     const val = parseFloat(inputVal);
     if (!isFinite(val) || val <= 0) { setEditing(null); return; }
     setSaving(category);
-    try { await onUpsert(category, val); } finally { setSaving(null); setEditing(null); }
+    setBudgetError("");
+    try { await onUpsert(category, val); setEditing(null); }
+    catch (err) { setBudgetError(err instanceof Error ? err.message : "Unable to save budget"); }
+    finally { setSaving(null); }
   };
 
   const remove = async (category: string) => {
     setSaving(category);
-    try { await onDelete(category); } finally { setSaving(null); }
+    setBudgetError("");
+    try { await onDelete(category); }
+    catch (err) { setBudgetError(err instanceof Error ? err.message : "Unable to remove budget"); }
+    finally { setSaving(null); }
   };
 
   return (
@@ -660,10 +668,11 @@ function BudgetTracker({
         </div>
         <div>
           <h2 className="font-bold text-zinc-100">Budget Tracker</h2>
-          <p className="text-xs text-zinc-600">Set monthly limits per category — tracked across all your datasets</p>
+          <p className="text-xs text-zinc-500">Spending in this dataset for {month}. Monthly limits are shared across your datasets.</p>
         </div>
       </div>
 
+      {budgetError && <p role="alert" className="px-5 pt-3 text-sm text-red-400">{budgetError}</p>}
       <div className="divide-y divide-white/4 px-5">
         {categories.slice(0, 8).map((cat) => {
           const limit = budgetMap.get(cat.category);
@@ -772,8 +781,11 @@ function BudgetTracker({
 
 export default function DashboardDatasetDetailPage() {
   const params = useParams<{ id: string }>();
+  return <DatasetDetailContent key={params?.id ?? ""} id={params?.id ?? ""} />;
+}
+
+function DatasetDetailContent({ id }: { id: string }) {
   const router = useRouter();
-  const id = params?.id ?? "";
 
   const [dataset, setDataset] = useState<DatasetDetail | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -817,33 +829,29 @@ export default function DashboardDatasetDetailPage() {
     setInsightPage(page);
   }, [id]);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    if (!getToken()) { router.replace("/login"); return; }
     if (!id) return;
-    setError("");
-    setLoading(true);
-    try {
-      const [datasetRes, metricsRes, quotaRes, budgetsRes] = await Promise.all([
-        api.getDataset(id),
-        api.getMetrics(id).catch(() => null),
-        api.quota().catch(() => null),
-        api.listBudgets().catch(() => null),
-      ]);
+    let cancelled = false;
+    void Promise.all([
+      api.getDataset(id),
+      api.getMetrics(id).catch(() => null),
+      api.quota().catch(() => null),
+      api.listBudgets().catch(() => null),
+    ]).then(async ([datasetRes, metricsRes, quotaRes, budgetsRes]) => {
+      if (cancelled) return;
       setDataset(datasetRes.data);
       if (metricsRes) setMetrics(metricsRes.data.metricsJson);
       if (quotaRes) setQuota(quotaRes.data);
       if (budgetsRes) setBudgets(budgetsRes.data);
       await Promise.all([loadTransactions(1, "", ""), loadInsights(1)]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dataset");
-    } finally {
-      setLoading(false);
-    }
-  }, [id, loadTransactions, loadInsights]);
-
-  useEffect(() => {
-    if (!getToken()) { router.replace("/login"); return; }
-    void load();
-  }, [id, router, load]);
+    }).catch((err) => {
+      if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load dataset");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [id, router, loadTransactions, loadInsights]);
 
   const onUpsertBudget = async (category: string, limit: number) => {
     const res = await api.upsertBudget(category, limit);
@@ -1041,12 +1049,11 @@ export default function DashboardDatasetDetailPage() {
                 ) : (
                   <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
-                      <Pie data={categoryChart} dataKey="total" nameKey="category" outerRadius={90}
-                        label={({ name, percent }) => `${name ?? ""} (${((percent ?? 0) * 100).toFixed(0)}%)`}
-                        labelLine={{ stroke: "rgba(255,255,255,0.15)" }}>
+                      <Pie data={categoryChart} dataKey="total" nameKey="category" outerRadius={85} innerRadius={54} isAnimationActive={false}>
                         {categoryChart.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} stroke="transparent" />)}
                       </Pie>
                       <Tooltip contentStyle={tooltipStyle} labelStyle={labelStyle} formatter={(v) => money(Number(v))} />
+                      <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize:12, paddingTop:12 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 )}
@@ -1063,8 +1070,8 @@ export default function DashboardDatasetDetailPage() {
                       <YAxis tick={{ fontSize: 11, fill: "#71717A" }} tickFormatter={v => `$${v}`} axisLine={false} tickLine={false} />
                       <Tooltip contentStyle={tooltipStyle} labelStyle={labelStyle} formatter={(v) => money(Number(v))} />
                       <Legend wrapperStyle={{ color: "#71717A", fontSize: "12px" }} />
-                      <Bar dataKey="income" fill="#10B981" name="Income" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="expenses" fill="#EF4444" name="Expenses" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="income" fill="#10B981" name="Income" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                      <Bar dataKey="expenses" fill="#EF4444" name="Expenses" radius={[4, 4, 0, 0]} isAnimationActive={false} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -1080,7 +1087,7 @@ export default function DashboardDatasetDetailPage() {
                     <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#71717A" }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: "#71717A" }} tickFormatter={v => `$${v}`} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={tooltipStyle} labelStyle={labelStyle} formatter={(v) => money(Number(v))} />
-                    <Line type="monotone" dataKey="net" name="Net" stroke="#3B82F6" strokeWidth={2.5}
+                    <Line type="monotone" dataKey="net" name="Net" stroke="#3B82F6" strokeWidth={2.5} isAnimationActive={false}
                       dot={{ r: 4, fill: "#3B82F6", strokeWidth: 0 }}
                       activeDot={{ r: 6, fill: "#3B82F6", stroke: "rgba(59,130,246,0.3)", strokeWidth: 4 }} />
                   </LineChart>
@@ -1089,9 +1096,10 @@ export default function DashboardDatasetDetailPage() {
             )}
 
             {/* Budget tracker */}
-            {metrics && metrics.topCategories.length > 0 && (
+            {metrics?.latestMonthSpending && (
               <BudgetTracker
-                categories={metrics.topCategories}
+                categories={metrics.latestMonthSpending.categories}
+                month={metrics.latestMonthSpending.month}
                 budgets={budgets}
                 onUpsert={onUpsertBudget}
                 onDelete={onDeleteBudget}
@@ -1126,8 +1134,8 @@ export default function DashboardDatasetDetailPage() {
                   {search || categoryFilter ? "No transactions match your filter." : "No transactions yet. Upload a CSV from the dashboard."}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
+                <div className="overflow-x-auto" role="region" aria-label="Transactions, scroll horizontally on smaller screens" tabIndex={0}>
+                  <table className="transaction-table min-w-full text-sm">
                     <thead>
                       <tr className="border-b border-white/5 bg-zinc-800/50 text-left text-xs font-bold uppercase tracking-widest text-zinc-600">
                         <th className="px-4 py-3">Date</th>
@@ -1167,11 +1175,11 @@ export default function DashboardDatasetDetailPage() {
 
             {/* AI Insights */}
             <section className="mb-6 rounded-xl border border-white/6 bg-zinc-900">
-              <div className="flex items-center justify-between border-b border-white/5 bg-gradient-to-r from-cyan-500/5 to-transparent px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 bg-gradient-to-r from-cyan-500/5 to-transparent px-5 py-4">
                 <div>
                   <h2 className="font-bold text-zinc-100">AI Insights</h2>
                   <p className="text-xs text-zinc-600">
-                    Grounded analysis · numbers from your database, narrative from AI · {insightMeta.total} analysis{insightMeta.total !== 1 ? "es" : ""}
+                    Explainable analysis from your transactions · {insightMeta.total} report{insightMeta.total !== 1 ? "s" : ""}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
@@ -1187,7 +1195,7 @@ export default function DashboardDatasetDetailPage() {
                           style={{ width: `${(quota.insightsToday / quota.quota) * 100}%` }} />
                       </div>
                       <span className={`text-xs tabular-nums ${quota.remaining === 0 ? "text-red-400" : "text-zinc-600"}`}>
-                        {quota.insightsToday}/{quota.quota} today
+                        {quota.insightsUsed}/{quota.insightsLimit} {quota.insightsPeriod}
                       </span>
                     </div>
                   )}

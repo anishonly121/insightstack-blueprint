@@ -352,8 +352,10 @@ export default function DashboardPage() {
   // Use refs so loadDatasets always reads current search/sort without stale closures
   const searchRef = useRef(datasetSearch);
   const sortRef = useRef(datasetSort);
-  searchRef.current = datasetSearch;
-  sortRef.current = datasetSort;
+  useEffect(() => {
+    searchRef.current = datasetSearch;
+    sortRef.current = datasetSort;
+  }, [datasetSearch, datasetSort]);
 
   const hasDatasets = useMemo(() => datasets.length > 0, [datasets.length]);
 
@@ -607,7 +609,7 @@ export default function DashboardPage() {
                 onClick={async () => {
                   setUpgradeLoading(true);
                   try { const res = await api.createCheckoutSession(); window.location.href = res.data.url; }
-                  catch { setUpgradeLoading(false); }
+                  catch (err) { setUpgradeLoading(false); toast({ type: "error", title: "Checkout unavailable", message: err instanceof Error ? err.message : "Please try again later." }); }
                 }}
                 className="rounded-lg bg-blue-500 px-3 py-2 text-sm font-black text-white shadow-[0_0_16px_rgba(59,130,246,0.4)] transition hover:bg-blue-400 hover:shadow-[0_0_24px_rgba(59,130,246,0.55)] disabled:opacity-50"
               >
@@ -628,7 +630,7 @@ export default function DashboardPage() {
         </header>
 
         {/* ── Upgrade success banner ─────────────────────────────────────── */}
-        {showUpgradedBanner && (
+        {showUpgradedBanner && quota?.isPro && (
           <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
@@ -655,9 +657,9 @@ export default function DashboardPage() {
           <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               { label: "Total Datasets", value: meta.total, sub: "in your account", color: "text-white" },
-              { label: "Parsed",         value: parsedCount, sub: "ready for insights", color: "text-emerald-400" },
-              { label: "Total Rows",     value: totalRows.toLocaleString(), sub: "transactions loaded", color: "text-white" },
-              { label: "Failed",         value: failedCount, sub: "upload errors", color: failedCount > 0 ? "text-red-400" : "text-zinc-600" },
+              { label: "Ready",          value: parsedCount, sub: "datasets on this page", color: "text-emerald-400" },
+              { label: "Transactions",   value: totalRows.toLocaleString(), sub: "in the displayed datasets", color: "text-white" },
+              { label: "Upload issues",  value: failedCount, sub: "on this page", color: failedCount > 0 ? "text-red-400" : "text-zinc-600" },
             ].map((stat) => (
               <div key={stat.label} className="rounded-xl border border-white/6 bg-zinc-900 p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">{stat.label}</p>
@@ -726,7 +728,7 @@ export default function DashboardPage() {
                 onClick={async () => {
                   setUpgradeLoading(true);
                   try { const res = await api.createCheckoutSession(); window.location.href = res.data.url; }
-                  catch { setUpgradeLoading(false); }
+                  catch (err) { setUpgradeLoading(false); toast({ type: "error", title: "Checkout unavailable", message: err instanceof Error ? err.message : "Please try again later." }); }
                 }}
                 className="shrink-0 rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-black text-white shadow-[0_0_16px_rgba(59,130,246,0.3)] transition hover:bg-blue-400 hover:shadow-[0_0_24px_rgba(59,130,246,0.5)] disabled:opacity-50"
               >

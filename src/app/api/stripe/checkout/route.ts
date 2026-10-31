@@ -4,9 +4,13 @@ import { getUserFromRequest } from "@/lib/auth";
 import { getRequestId, jsonWithRequestId, errorResponseWithRequestId } from "@/lib/http";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
+import { enforceCsrfIfCookieAuth } from "@/lib/csrf";
+import { getUserSubscription } from "@/lib/subscription";
 
 export async function POST(req: Request): Promise<NextResponse> {
   const requestId = getRequestId(req);
+  const csrfError = enforceCsrfIfCookieAuth(req, requestId);
+  if (csrfError) return csrfError;
 
   const user = await getUserFromRequest(req);
   if (!user) return errorResponseWithRequestId(requestId, 401, "UNAUTHORIZED", "Missing or invalid token");
@@ -16,6 +20,9 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   try {
+    if ((await getUserSubscription(user.id)).isPro) {
+      return errorResponseWithRequestId(requestId, 409, "ALREADY_SUBSCRIBED", "You already have Pro. Manage your subscription in account settings.");
+    }
     const stripe = getStripe();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://insightstack-peach.vercel.app";
     const priceId = process.env.STRIPE_PRO_PRICE_ID!;
@@ -32,7 +39,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         email: user.email,
         name: user.name,
         metadata: { userId: user.id },
-      });
+      }, { idempotencyKey: `customer-${user.id}` });
       customerId = customer.id;
       await prisma.user.update({
         where: { id: user.id },

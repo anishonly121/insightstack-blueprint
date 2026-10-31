@@ -4,20 +4,21 @@ import { Analytics } from "@vercel/analytics/next";
 import { ToastProvider } from "@/components/Toaster";
 
 export const metadata: Metadata = {
-  title: "InsightStack — AI-Powered Finance Analytics",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://insightstack-peach.vercel.app"),
+  title: "InsightStack | A clearer perspective on your finances",
   description:
-    "Upload your transaction CSV, visualise spending patterns, and generate AI-powered insights. Built with Next.js, PostgreSQL, Prisma, and a custom FinanceAI engine.",
+    "Explore your cash flow, understand spending patterns, and plan your next step. Try an interactive finance workspace without an account.",
   keywords: ["finance", "analytics", "AI", "spending", "budget", "CSV", "FinanceAI"],
   openGraph: {
-    title: "InsightStack — AI-Powered Finance Analytics",
+    title: "InsightStack | Your money. A clearer perspective.",
     description:
-      "Upload your transactions, visualise spending, and get AI-generated recommendations.",
+      "Turn transaction rows into a clearer financial picture. Explore the interactive demo, built by Anish Bhole.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "InsightStack — AI-Powered Finance Analytics",
-    description: "Upload your transactions, visualise spending, and get AI-generated recommendations.",
+    title: "InsightStack | Your money. A clearer perspective.",
+    description: "A finance workspace with explainable analysis and an interactive demo. Built by Anish Bhole.",
   },
 };
 
@@ -27,7 +28,7 @@ const jsonLd = {
   "name": "InsightStack",
   "applicationCategory": "FinanceApplication",
   "operatingSystem": "Web",
-  "description": "AI-powered personal finance analytics. Upload any bank CSV and get FinanceAI spending insights, anomaly detection, and budget recommendations in under 60 seconds.",
+  "description": "Finance analytics with structured CSV imports, cash-flow metrics, explainable spending insights, and an interactive sample workspace.",
   "url": process.env.NEXT_PUBLIC_APP_URL ?? "https://insightstack-peach.vercel.app",
   "author": {
     "@type": "Person",

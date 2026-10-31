@@ -26,6 +26,8 @@ export default function SettingsPage() {
   const [quota, setQuota] = useState<import("@/lib/api").QuotaInfo | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [billingError, setBillingError] = useState("");
+  const [digestError, setDigestError] = useState("");
 
   const [digestEnabled, setDigestEnabled] = useState(true);
   const [digestLoading, setDigestLoading] = useState(false);
@@ -41,12 +43,14 @@ export default function SettingsPage() {
     setDigestEnabled(enabled);
     setDigestLoading(true);
     setDigestSaved(false);
+    setDigestError("");
     try {
       await api.updateNotifications({ emailDigestEnabled: enabled });
       setDigestSaved(true);
       setTimeout(() => setDigestSaved(false), 2000);
-    } catch {
+    } catch (err) {
       setDigestEnabled(!enabled);
+      setDigestError(err instanceof Error ? err.message : "Unable to save preference. Please try again.");
     } finally {
       setDigestLoading(false);
     }
@@ -217,10 +221,12 @@ export default function SettingsPage() {
                   disabled={portalLoading}
                   onClick={async () => {
                     setPortalLoading(true);
+                    setBillingError("");
                     try {
                       const res = await api.createPortalSession();
                       window.location.href = res.data.url;
-                    } catch {
+                    } catch (err) {
+                      setBillingError(err instanceof Error ? err.message : "Unable to open billing. Please try again.");
                       setPortalLoading(false);
                     }
                   }}
@@ -234,10 +240,12 @@ export default function SettingsPage() {
                   disabled={checkoutLoading}
                   onClick={async () => {
                     setCheckoutLoading(true);
+                    setBillingError("");
                     try {
                       const res = await api.createCheckoutSession();
                       window.location.href = res.data.url;
-                    } catch {
+                    } catch (err) {
+                      setBillingError(err instanceof Error ? err.message : "Unable to open checkout. Please try again.");
                       setCheckoutLoading(false);
                     }
                   }}
@@ -249,6 +257,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {billingError && <p role="alert" className="mb-4 text-sm text-red-400">{billingError}</p>}
           {!quota?.isPro && (
             <div className="grid grid-cols-2 gap-3 text-xs text-zinc-600">
               <div className="rounded-lg border border-white/5 bg-zinc-800/30 p-3">
@@ -284,6 +293,7 @@ export default function SettingsPage() {
             <button
               type="button"
               role="switch"
+              aria-label="Weekly email digest"
               aria-checked={digestEnabled}
               disabled={digestLoading}
               onClick={() => void onToggleDigest(!digestEnabled)}
@@ -295,6 +305,7 @@ export default function SettingsPage() {
             </button>
           </div>
 
+          {digestError && <p role="alert" className="mt-3 text-sm text-red-400">{digestError}</p>}
           {digestSaved && (
             <p className="mt-3 text-xs text-emerald-400">Preference saved.</p>
           )}

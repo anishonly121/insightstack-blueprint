@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
-export const alt = "InsightStack — AI-Powered Finance Analytics";
+export const runtime = "nodejs";
+export const alt =
+  "InsightStack: your money, a clearer perspective. Built by Anish Bhole.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -13,82 +14,100 @@ export default function Image() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#050B18",
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          position: "relative",
-          overflow: "hidden",
+          background: "#fafbf9",
+          padding: "66px",
+          fontFamily: "sans-serif",
+          color: "#202c36",
         }}
       >
-        {/* Background glows */}
-        <div style={{ position: "absolute", top: -240, left: -180, width: 900, height: 900, background: "radial-gradient(ellipse, rgba(59,130,246,0.16) 0%, transparent 65%)", filter: "blur(72px)" }} />
-        <div style={{ position: "absolute", bottom: -200, right: -120, width: 700, height: 700, background: "radial-gradient(ellipse, rgba(99,102,241,0.10) 0%, transparent 65%)", filter: "blur(72px)" }} />
-
-        {/* Dot grid overlay */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)", backgroundSize: "32px 32px", opacity: 0.6 }} />
-
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "0 80px", position: "relative" }}>
-
-          {/* Badge */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 999, padding: "6px 18px", marginBottom: 36 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#60A5FA" }} />
-            <span style={{ color: "#93C5FD", fontSize: 13, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" }}>AI-Powered Finance Analytics</span>
+        <div style={{ display: "flex", flexDirection: "column", width: "68%" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              fontSize: 28,
+              fontWeight: 700,
+              letterSpacing: -1,
+            }}
+          >
+            <div
+              style={{
+                width: 31,
+                height: 31,
+                background: "#365be8",
+                borderRadius: 8,
+                marginRight: 10,
+              }}
+            />
+            insightstack.
           </div>
-
-          {/* Logo + wordmark */}
-          <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 36 }}>
-            {/* Logo mark using CSS bars */}
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 52 }}>
-              <div style={{ width: 12, height: 20, background: "rgba(59,130,246,0.32)", borderRadius: 4 }} />
-              <div style={{ width: 12, height: 34, background: "rgba(59,130,246,0.62)", borderRadius: 4 }} />
-              <div style={{ width: 12, height: 52, background: "#3B82F6", borderRadius: 4 }} />
-            </div>
-            <span style={{ fontSize: 58, fontWeight: 900, color: "white", letterSpacing: "-0.025em", lineHeight: 1 }}>
-              Insight<span style={{ color: "#60A5FA" }}>Stack</span>
-            </span>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              marginTop: 75,
+              fontSize: 65,
+              letterSpacing: -3,
+              lineHeight: 1.08,
+            }}
+          >
+            <span>Your money.</span>
+            <span>A clearer</span>
+            <span style={{ color: "#365be8" }}>perspective.</span>
           </div>
-
-          {/* Headline */}
-          <div style={{ fontSize: 62, fontWeight: 900, lineHeight: 1.08, letterSpacing: "-0.025em", color: "white", marginBottom: 24, maxWidth: 900 }}>
-            Know exactly where every dollar goes.
+          <div style={{ fontSize: 20, color: "#758276", marginTop: 30 }}>
+            From transaction rows to your next decision.
           </div>
-
-          {/* Subtitle */}
-          <div style={{ fontSize: 22, color: "#8892A4", lineHeight: 1.5, marginBottom: 52 }}>
-            Upload any bank CSV · Map spend · Get AI-powered recommendations in 60 seconds
+          <div style={{ fontSize: 14, color: "#7a8b80", marginTop: "auto" }}>
+            An independent project by Anish Bhole
           </div>
-
-          {/* Stats */}
-          <div style={{ display: "flex", gap: 20 }}>
-            {[
-              { val: "87%", label: "less time on reviews" },
-              { val: "60s",  label: "CSV to AI insight"    },
-              { val: "FinanceAI", label: "custom engine"    },
-              { val: "100%", label: "TypeScript"           },
-            ].map((s) => (
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            background: "#1d2c37",
+            borderRadius: 18,
+            padding: 30,
+            width: "32%",
+            marginTop: 18,
+            marginBottom: 18,
+            color: "#e7eef3",
+          }}
+        >
+          <div style={{ fontSize: 13, color: "#94afa1", letterSpacing: 2 }}>
+            EXPLORE INSIGHTSTACK
+          </div>
+          <div style={{ fontSize: 30, marginTop: 30, lineHeight: 1.2 }}>
+            A financial workspace, in focus.
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              gap: 13,
+              height: 135,
+              marginTop: 35,
+            }}
+          >
+            {[56, 82, 68, 116, 95, 128].map((height, index) => (
               <div
-                key={s.val}
+                key={index}
                 style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 14,
-                  padding: "16px 28px",
-                  textAlign: "center",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
+                  width: 25,
+                  height,
+                  borderRadius: 5,
+                  background: index === 5 ? "#b9d6c3" : "#5978e0",
                 }}
-              >
-                <div style={{ fontSize: 30, fontWeight: 900, color: "#60A5FA", lineHeight: 1 }}>{s.val}</div>
-                <div style={{ fontSize: 13, color: "#8892A4", marginTop: 6 }}>{s.label}</div>
-              </div>
+              />
             ))}
+          </div>
+          <div style={{ fontSize: 15, color: "#a7bac8", marginTop: "auto" }}>
+            Interactive demo. No sign-up.
           </div>
         </div>
       </div>
     ),
-    { ...size }
+    size,
   );
 }

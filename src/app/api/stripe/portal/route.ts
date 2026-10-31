@@ -4,9 +4,12 @@ import { getUserFromRequest } from "@/lib/auth";
 import { getRequestId, jsonWithRequestId, errorResponseWithRequestId } from "@/lib/http";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
+import { enforceCsrfIfCookieAuth } from "@/lib/csrf";
 
 export async function POST(req: Request): Promise<NextResponse> {
   const requestId = getRequestId(req);
+  const csrfError = enforceCsrfIfCookieAuth(req, requestId);
+  if (csrfError) return csrfError;
 
   const user = await getUserFromRequest(req);
   if (!user) return errorResponseWithRequestId(requestId, 401, "UNAUTHORIZED", "Missing or invalid token");

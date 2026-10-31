@@ -52,7 +52,10 @@ export async function POST(
   const requestMeta = getAuditRequestMeta(req);
 
   try {
-    await rateLimitOrThrow({ key: `datasets:insights:${dataset.id}:${user.id}:${ip}`, limit: 20, windowMs: 60_000 });
+    const { allowed } = await rateLimitOrThrow({ key: `datasets:insights:${dataset.id}:${user.id}:${ip}`, limit: 20, windowMs: 60_000 });
+    if (!allowed) {
+      return errorResponseWithRequestId(requestId, 429, "RATE_LIMITED", "Too many requests. Try again later.");
+    }
   } catch {
     return errorResponseWithRequestId(requestId, 429, "RATE_LIMITED", "Too many requests. Try again later.");
   }

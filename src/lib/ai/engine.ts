@@ -1,6 +1,6 @@
 import type { MetricsJson, AnomalyStat, EngineOutput, EnhancedStats, HealthScore } from './types';
 import { evaluateRules } from './strategies/rules';
-import { detectTrend, computeHHI, computeMonthlyVolatility, forecastNextMonth } from './strategies/statistical';
+import { detectTrend, computeHHI, forecastNextMonth } from './strategies/statistical';
 import { BM25 } from './strategies/bm25';
 import { KNOWLEDGE_BASE } from './knowledge/base';
 import {

@@ -103,9 +103,10 @@ const SUMMARY_VARIANTS: Array<(ctx: SummaryContext) => string> = [
 /** Select a summary template based on data characteristics for linguistic variety. */
 export function composeSummary(ctx: SummaryContext): string {
   const criticalCount = ctx.findings.filter((f) => f.severity === 'critical').length;
-  // Critical situations always use variant B (verdict-first for urgency)
-  const idx = criticalCount > 0 ? 1 : ctx.metrics.monthlyBreakdown.length > 2 ? 2 : 0;
-  return SUMMARY_VARIANTS[idx]!(ctx);
+  // Explicit branches keep the selected context intact in production bundles.
+  if (criticalCount > 0) return SUMMARY_VARIANTS[1]!(ctx);
+  if (ctx.metrics.monthlyBreakdown.length > 2) return SUMMARY_VARIANTS[2]!(ctx);
+  return SUMMARY_VARIANTS[0]!(ctx);
 }
 
 // ── Category reasons ──────────────────────────────────────────────────────────
@@ -163,7 +164,7 @@ export function composeRecommendations(
   const criticalFinding = findings.find((f) => f.severity === 'critical');
   if (criticalFinding?.id === 'deficit') {
     recs.push(
-      `Close the $${Math.abs(metrics.netSavings).toFixed(2)} monthly deficit immediately — audit every expense category and eliminate discretionary costs until income exceeds spending.`,
+      `Expenses exceeded income by $${Math.abs(metrics.netSavings).toFixed(2)} over this dataset. Review the largest expense categories and identify which costs are recurring before setting a monthly plan.`,
     );
   } else if (criticalFinding?.id === 'concentration-extreme') {
     const top = metrics.topCategories[0];
@@ -177,18 +178,19 @@ export function composeRecommendations(
   // Priority 2: savings rate
   if (recs.length < 3 && metrics.totalIncome > 0) {
     if (metrics.savingsRate < 20) {
-      const gapMonthly = (0.2 * metrics.totalIncome - metrics.netSavings).toFixed(2);
+      const months = Math.max(stats.monthCount, 1);
+      const gapMonthly = ((0.2 * metrics.totalIncome - metrics.netSavings) / months).toFixed(2);
       const top = metrics.topCategories[0];
       const cutClause =
         top && Math.abs(top.total) > 0
-          ? ` Cutting ${top.category} spend by 15% would recover $${(Math.abs(top.total) * 0.15).toFixed(2)}/month toward that goal.`
+          ? ` A 15% reduction in ${top.category} would average $${(Math.abs(top.total) * 0.15 / months).toFixed(2)} per recorded month.`
           : '';
       recs.push(
         `Increase monthly savings by $${gapMonthly} to reach the 20% benchmark — automate a standing transfer on payday so the money moves before you can spend it.${cutClause}`,
       );
     } else if (metrics.savingsRate >= 30) {
       recs.push(
-        `Your ${metrics.savingsRate.toFixed(1)}% savings rate is excellent. Ensure surplus savings are deployed into index funds or CPF top-ups — idle cash in a savings account loses to inflation annually.`,
+        `Your savings rate is ${metrics.savingsRate.toFixed(1)}% for this period. Review the monthly breakdown for consistency, then use your recurring surplus as the starting point for a savings plan.`,
       );
     }
   }
