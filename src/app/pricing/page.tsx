@@ -93,7 +93,7 @@ export default function PricingPage() {
                 : "For a focused view of your personal finances."}
             </p>
             <div className="pricing-amount">
-              {pro ? "$9" : "$0"} <span>{pro ? "USD / month" : "/ month"}</span>
+              {pro ? "$9" : "$0"} <span>{pro ? "SGD / month" : "/ month"}</span>
             </div>
             {pro ? (
               <button
