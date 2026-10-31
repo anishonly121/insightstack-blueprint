@@ -8,6 +8,9 @@ const isLocalDb =
 
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
+  // Embedded local databases can opt into one connection; hosted PostgreSQL
+  // retains the normal pool size.
+  max: Math.max(1, Math.min(20, Number(process.env.DATABASE_POOL_MAX) || 10)),
   ssl: isLocalDb ? false : { rejectUnauthorized: false },
 });
 

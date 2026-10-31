@@ -133,7 +133,7 @@ function InsightCard({ insight, datasetId, datasetName }: { insight: Insight; da
 
   return (
     <article className="overflow-hidden rounded-xl border border-white/6 bg-zinc-900 transition-all hover:border-white/10">
-      <div className="flex items-center justify-between border-b border-white/5 bg-gradient-to-r from-cyan-500/5 to-transparent px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 bg-gradient-to-r from-cyan-500/5 to-transparent px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/20">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -1049,12 +1049,11 @@ function DatasetDetailContent({ id }: { id: string }) {
                 ) : (
                   <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
-                      <Pie data={categoryChart} dataKey="total" nameKey="category" outerRadius={90} isAnimationActive={false}
-                        label={({ name, percent }) => `${name ?? ""} (${((percent ?? 0) * 100).toFixed(0)}%)`}
-                        labelLine={{ stroke: "rgba(255,255,255,0.15)" }}>
+                      <Pie data={categoryChart} dataKey="total" nameKey="category" outerRadius={85} innerRadius={54} isAnimationActive={false}>
                         {categoryChart.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} stroke="transparent" />)}
                       </Pie>
                       <Tooltip contentStyle={tooltipStyle} labelStyle={labelStyle} formatter={(v) => money(Number(v))} />
+                      <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize:12, paddingTop:12 }} />
                     </PieChart>
                   </ResponsiveContainer>
                 )}
@@ -1176,11 +1175,11 @@ function DatasetDetailContent({ id }: { id: string }) {
 
             {/* AI Insights */}
             <section className="mb-6 rounded-xl border border-white/6 bg-zinc-900">
-              <div className="flex items-center justify-between border-b border-white/5 bg-gradient-to-r from-cyan-500/5 to-transparent px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 bg-gradient-to-r from-cyan-500/5 to-transparent px-5 py-4">
                 <div>
                   <h2 className="font-bold text-zinc-100">AI Insights</h2>
                   <p className="text-xs text-zinc-600">
-                    Grounded analysis · numbers from your database, narrative from AI · {insightMeta.total} analysis{insightMeta.total !== 1 ? "es" : ""}
+                    Explainable analysis from your transactions · {insightMeta.total} report{insightMeta.total !== 1 ? "s" : ""}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
@@ -1196,7 +1195,7 @@ function DatasetDetailContent({ id }: { id: string }) {
                           style={{ width: `${(quota.insightsToday / quota.quota) * 100}%` }} />
                       </div>
                       <span className={`text-xs tabular-nums ${quota.remaining === 0 ? "text-red-400" : "text-zinc-600"}`}>
-                        {quota.insightsToday}/{quota.quota} today
+                        {quota.insightsUsed}/{quota.insightsLimit} {quota.insightsPeriod}
                       </span>
                     </div>
                   )}

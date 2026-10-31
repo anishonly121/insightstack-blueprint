@@ -200,6 +200,7 @@ test("engineering and builder pages render and registration opens the correct fo
 });
 
 test("pricing presents only the supported billing period and directs guests to registration", async () => {
+    await page.setViewportSize({ width: 1440, height: 1080 });
   await page.goto(`${base}/pricing`);
   assert.equal(
     await page.getByRole("button", { name: "Toggle billing period" }).count(),
@@ -210,11 +211,29 @@ test("pricing presents only the supported billing period and directs guests to r
       exact: true,
     })
     .waitFor();
-  await page.getByRole("button", { name: /Start 14-day free trial/ }).click();
+    await page.getByText("How does the analysis work?", { exact: true }).click();
+    await page.getByText(/No external language model is required/).waitFor();
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    await screenshot("pricing-desktop");
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await screenshot("pricing-mobile");
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    await page.getByRole("button", { name: /Start 14-day free trial/ }).click();
   await page.waitForURL(`${base}/login?mode=register`);
   await page.getByRole("textbox", { name: "Full name" }).waitFor();
 });
 
-test("public product experience has no uncaught browser errors", () => {
+  test("account recovery provides accessible forms and handles incomplete links", async () => {
+    await page.goto(`${base}/forgot-password`);
+    await page.getByRole("textbox", { name: "Email address" }).waitFor();
+    await screenshot("account-recovery");
+    await page.goto(`${base}/reset-password`);
+    await page.getByRole("heading", { name: "This link is incomplete." }).waitFor();
+    await page.getByRole("link", { name: "Request a new link" }).click();
+    await page.waitForURL(`${base}/forgot-password`);
+  });
+
+  test("public product experience has no uncaught browser errors", () => {
   assert.deepEqual(errors, []);
 });

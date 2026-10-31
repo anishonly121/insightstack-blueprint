@@ -13,6 +13,9 @@ import { chromium } from "playwright";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { mkdir } from "node:fs/promises";
+import "dotenv/config";
+import pg from "pg";
+import { createHash, randomUUID } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
@@ -22,6 +25,7 @@ if (!["localhost", "127.0.0.1"].includes(new URL(BASE).hostname)) {
 const DEMO_CSV = join(__dirname, "../../docs/demo-transactions.csv");
 const EMAIL = `e2e.${Date.now()}@test.insightstack.dev`;
 const PASS = "E2eTest123!";
+let activePassword = PASS;
 
 let browser, ctx, page;
 const pageErrors = [];
@@ -76,6 +80,10 @@ test("register — new account redirects to /dashboard", async () => {
 // ── 3. Core product flow ───────────────────────────────────────────────────────
 
 test("dashboard — dataset creation form is present", async () => {
+  await page.goto(`${BASE}/dashboard?upgraded=1`, { waitUntil: "networkidle" });
+  assert.equal(await page.getByText("You're now on Pro!", { exact: true }).count(), 0);
+  await page.getByRole("button", { name: /Try Pro/ }).click();
+  await page.getByText("Checkout unavailable", { exact: true }).waitFor();
   const input = page.locator('input[placeholder*="January"]');
   await input.waitFor({ timeout: 5000 });
   assert.ok(await input.isVisible(), "Dataset name input should be visible");
@@ -124,7 +132,21 @@ test("analysis streams, persists, and chat answers an actual dataset question", 
   assert.ok((await response.text()).length > 40);
   await page.locator(".recharts-pie-sector").first().waitFor();
   await page.mouse.move(0, 0);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.screenshot({ path: "artifacts/account-preview/dataset-analysis.png", fullPage: true });
+});
+
+test("workspace navigation and dataset analysis remain usable on mobile", async () => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  const nav = page.getByRole("navigation", { name: "Workspace navigation" });
+  await nav.getByRole("link", { name: "Your datasets" }).waitFor();
+  assert.equal(await nav.getByRole("link", { name: "Your datasets" }).getAttribute("aria-current"), "page");
+  await page.screenshot({ path: "artifacts/account-preview/dataset-mobile.png", fullPage: true });
+  const overflow = await page.evaluate(() => [...document.querySelectorAll("body *")].filter(el => el.getBoundingClientRect().right > innerWidth + 1 && getComputedStyle(el).position !== "fixed").slice(0, 15).map(el => ({ tag: el.tagName, class: el.className, width: el.getBoundingClientRect().width })));
+  const fits = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  assert.ok(fits, `Workspace should not overflow the viewport: ${JSON.stringify(overflow)}`);
 });
 
 test("sharing publishes an insight and revoking makes it private again", async () => {
@@ -173,6 +195,7 @@ test("password change, logout, and new-password login work", async () => {
   await page.getByPlaceholder("Repeat new password").fill(`${PASS}New`);
   await page.getByRole("button", { name: "Update password" }).click();
   await page.getByText("Password changed successfully.").waitFor();
+  activePassword = `${PASS}New`;
   await page.goto(`${BASE}/dashboard`);
   await page.getByRole("button", { name: "Logout" }).click();
   await page.waitForURL("**/login");
@@ -183,14 +206,33 @@ test("password change, logout, and new-password login work", async () => {
   await page.getByText("E2E Test Dataset", { exact: true }).waitFor();
 });
 
+test("password recovery form consumes a local reset link and accepts the new password", async () => {
+  const connectionString = process.env.DATABASE_URL;
+  assert.ok(["localhost", "127.0.0.1"].includes(new URL(connectionString).hostname));
+  const db = new pg.Client({ connectionString });
+  await db.connect();
+  const token = randomUUID();
+  try {
+    await db.query('INSERT INTO "PasswordResetToken" (id, "userId", "tokenHash", "expiresAt", "createdAt") SELECT $1, id, $2, NOW() + INTERVAL \'30 minutes\', NOW() FROM "User" WHERE email = $3', [randomUUID(), createHash("sha256").update(token).digest("hex"), EMAIL]);
+  } finally { await db.end(); }
+  await page.goto(`${BASE}/reset-password?token=${token}&email=${encodeURIComponent(EMAIL)}`);
+  await page.getByLabel("New password", { exact: true }).fill(`${PASS}Recovered`);
+  await page.getByLabel("Confirm new password", { exact: true }).fill(`${PASS}Recovered`);
+  await page.getByRole("button", { name: "Update password" }).click();
+  await page.getByRole("heading", { name: "Your password is updated." }).waitFor();
+  activePassword = `${PASS}Recovered`;
+  const response = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: EMAIL, password: activePassword }) });
+  assert.equal(response.status, 200);
+});
+
 test("disposable account can be deleted and no longer authenticates", async () => {
   await page.goto(`${BASE}/dashboard/settings`);
   await page.getByRole("button", { name: "Delete account", exact: true }).click();
-  await page.getByPlaceholder("Your current password").fill(`${PASS}New`);
+  await page.getByPlaceholder("Your current password").fill(activePassword);
   await page.getByPlaceholder("delete my account").fill("delete my account");
   await page.getByRole("button", { name: "Permanently delete account" }).click();
   await page.waitForURL(BASE + "/");
-  const res = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: EMAIL, password: `${PASS}New` }) });
+  const res = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: EMAIL, password: activePassword }) });
   assert.equal(res.status, 401);
 });
 

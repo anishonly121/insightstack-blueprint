@@ -82,6 +82,8 @@ npx prisma dev --name insightstack-local --detach
 
 Copy the printed local `postgres://` URL into both `DATABASE_URL` and `DIRECT_URL` in your ignored `.env`, then run `npm run prisma:deploy`. Reuse the same named instance to retain local accounts and datasets. Stop it with `npx prisma dev stop insightstack-local` when finished. This is a development database, not production hosting.
 
+For the embedded local database, set `DATABASE_POOL_MAX=1` in `.env` to keep queries on one application connection. Hosted PostgreSQL defaults to ten connections per application process; tune this value to your provider's connection limits.
+
 For a **demo-only local preview**, use local placeholder database URLs and a local-only JWT secret in `.env`, generate the Prisma client, and skip `prisma:deploy`. The public routes will work, but creating accounts, logging in, and uploading data require a real database.
 
 For a production build:

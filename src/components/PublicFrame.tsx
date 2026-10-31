@@ -19,6 +19,7 @@ export function PublicFrame({ children }: { children: ReactNode }) {
         <nav aria-label="Main navigation">
           <Link href="/demo">The demo</Link>
           <Link href="/how-it-works">How it works</Link>
+          <Link href="/pricing">Pricing</Link>
           <Link href="/about">Meet the builder</Link>
         </nav>
         <Link href="/demo" className="product-button primary">
