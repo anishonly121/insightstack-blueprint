@@ -4,6 +4,9 @@ import { logger } from "@/lib/logger";
 import { sendWeeklyDigest, type DigestData } from "@/lib/digest";
 import { computeMetrics } from "@/lib/metrics";
 import type { InsightPayload } from "@/app/api/datasets/[id]/insights/route";
+import { z } from "zod";
+
+export const maxDuration = 300;
 
 // Vercel Cron: runs every Monday at 08:00 UTC (configured in vercel.json)
 // Protected by CRON_SECRET env var — Vercel passes this automatically.
@@ -26,9 +29,19 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   logger.info("CRON_DIGEST_START", { at: new Date().toISOString() });
 
+  // A secret-authenticated operator can verify one disposable account without
+  // emailing every subscriber. Scheduled requests omit this filter.
+  const params = new URL(req.url).searchParams;
+  const userId = params.get("userId");
+  if (userId && !z.string().uuid().safeParse(userId).success) {
+    return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
+  }
+  const dryRun = params.get("dryRun") === "true";
+
   // Find users who have at least one fully parsed dataset
   const users = await prisma.user.findMany({
     where: {
+      ...(userId ? { id: userId } : {}),
       emailDigestEnabled: true,
       datasets: { some: { status: "PARSED" } },
     },
@@ -114,7 +127,7 @@ export async function GET(req: Request): Promise<NextResponse> {
         dashboardUrl: appUrl,
       };
 
-      await sendWeeklyDigest(digestData);
+      if (!dryRun) await sendWeeklyDigest(digestData);
       sent++;
 
       logger.info("CRON_DIGEST_SENT", {
@@ -131,7 +144,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     }
   }
 
-  const result = { sent, skipped, failed, total: users.length };
+  const result = { sent: dryRun ? 0 : sent, eligible: sent, skipped, failed, total: users.length, dryRun };
   logger.info("CRON_DIGEST_DONE", result);
-  return NextResponse.json(result);
+  return NextResponse.json(result, { status: failed > 0 ? 502 : 200 });
 }

@@ -1,6 +1,6 @@
 import "server-only";
-import sgMail from "@sendgrid/mail";
-import { env } from "@/lib/env";
+import { sendEmail } from "@/lib/mail";
+import { escapeEmailHtml } from "@/lib/email-content";
 
 export type BudgetAlert = {
   category: string;
@@ -34,7 +34,7 @@ function buildAlertHtml(d: BudgetAlertEmailInput): string {
       (a) => `
       <tr>
         <td style="padding:10px 16px;border-bottom:1px solid #F1F5F9;font-size:13px;color:#1E293B;font-weight:600;">
-          ${a.category}
+          ${escapeEmailHtml(a.category)}
         </td>
         <td style="padding:10px 16px;border-bottom:1px solid #F1F5F9;font-size:13px;color:#475569;text-align:right;">
           ${$(a.spent)}
@@ -129,12 +129,6 @@ function buildAlertHtml(d: BudgetAlertEmailInput): string {
 }
 
 export async function sendBudgetAlertEmail(data: BudgetAlertEmailInput): Promise<void> {
-  const apiKey = env.SENDGRID_API_KEY;
-  const fromEmail = env.SENDGRID_FROM_EMAIL;
-  if (!apiKey || !fromEmail) return;
-
-  sgMail.setApiKey(apiKey);
-
   const overCount = data.alerts.filter((a) => a.pct >= 100).length;
   const subject =
     overCount > 0
@@ -152,11 +146,10 @@ export async function sendBudgetAlertEmail(data: BudgetAlertEmailInput): Promise
     `View your dashboard: ${data.dashboardUrl}/dashboard`,
   ].join("\n");
 
-  await sgMail.send({
+  await sendEmail({
     to: data.to,
-    from: { email: fromEmail, name: "InsightStack" },
     subject,
-    html: buildAlertHtml(data),
+    html: buildAlertHtml({ ...data, name: escapeEmailHtml(data.name), datasetName: escapeEmailHtml(data.datasetName), dashboardUrl: escapeEmailHtml(data.dashboardUrl) }),
     text,
   });
 }

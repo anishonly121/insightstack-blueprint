@@ -124,7 +124,7 @@ export async function POST(req: Request): Promise<NextResponse> {
           resetLink,
         });
       } catch (err) {
-        if (err instanceof Error && ["SENDGRID_NOT_CONFIGURED", "EMAIL_NOT_CONFIGURED"].includes(err.message)) {
+        if (err instanceof Error && err.message === "EMAIL_NOT_CONFIGURED") {
           logEmailError("EMAIL_NOT_CONFIGURED", emailHash, requestMeta, err);
           // Keep forgot-password behavior stable in local/dev even without email-provider keys.
         } else {
