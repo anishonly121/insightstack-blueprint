@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import Papa from "papaparse";
 import { Prisma } from "@prisma/client";
@@ -10,6 +10,7 @@ import { getAuditRequestMeta, logAudit } from "@/lib/audit";
 import { errorResponseWithRequestId, getRequestId, jsonWithRequestId } from "@/lib/http";
 import { sendBudgetAlertEmail } from "@/lib/alerts";
 import { logger } from "@/lib/logger";
+import { computeMetrics } from "@/lib/metrics";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -217,9 +218,9 @@ export async function POST(
       },
     });
 
-    // Fire-and-forget: check budgets and send alert if any category hits 80%+
+    // Keep the serverless invocation alive until notification work completes.
     if (nextStatus === "PARSED" && rowsToInsert.length > 0) {
-      void (async () => {
+      after(async () => {
         try {
           const [budgets, fullUser, datasetRecord] = await Promise.all([
             prisma.budget.findMany({ where: { userId: user.id } }),
@@ -229,11 +230,8 @@ export async function POST(
 
           if (!budgets.length || !fullUser?.emailDigestEnabled) return;
 
-          const categoryTotals = new Map<string, number>();
-          for (const tx of rowsToInsert) {
-            const amt = Math.abs(Number(tx.amount));
-            categoryTotals.set(tx.category, (categoryTotals.get(tx.category) ?? 0) + amt);
-          }
+          const monthly = computeMetrics(rowsToInsert).latestMonthSpending;
+          const categoryTotals = new Map((monthly?.categories ?? []).map((c) => [c.category, Math.abs(c.total)]));
 
           const alerts = budgets
             .map((b) => {
@@ -259,7 +257,7 @@ export async function POST(
         } catch (err) {
           logger.error("BUDGET_ALERT_FAILED", { userId: user.id, error: err instanceof Error ? err.message : String(err) });
         }
-      })();
+      });
     }
 
     return jsonWithRequestId(requestId, { data: updated });

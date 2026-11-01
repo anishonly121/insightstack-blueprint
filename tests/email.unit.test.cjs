@@ -5,6 +5,35 @@ require("ts-node").register({ transpileOnly: true, compilerOptions: { module: "C
 const { passwordResetEmail } = require("../src/lib/email-content.ts");
 const { sendBrevoEmail } = require("../src/lib/brevo.ts");
 
+test("budget alerts and weekly digests use shared delivery and escape uploaded names", async () => {
+  const Module = require("node:module");
+  const originalLoad = Module._load;
+  const messages = [];
+  let sendBudgetAlertEmail, sendWeeklyDigest;
+  try {
+    Module._load = function (id, ...args) {
+      if (id === "server-only") return {};
+      if (id === "@/lib/mail") return { sendEmail: async (message) => messages.push(message) };
+      if (id === "@/lib/email-content") return require("../src/lib/email-content.ts");
+      return originalLoad.call(this, id, ...args);
+    };
+    ({ sendBudgetAlertEmail } = require("../src/lib/alerts.ts"));
+    ({ sendWeeklyDigest } = require("../src/lib/digest.ts"));
+  } finally { Module._load = originalLoad; }
+  const shared = {to:"recipient@example.com",name:'<img src=x>',datasetName:'<script>dataset</script>',dashboardUrl:'https://example.com'};
+  await sendBudgetAlertEmail({...shared, alerts:[{category:'<b>Food</b>',spent:90,limit:100,pct:90}]});
+  await sendWeeklyDigest({...shared,month:'November 2026',totalIncome:100,totalExpenses:90,netSavings:10,savingsRate:10,transactionCount:2,topCategories:[{category:'<b>Food</b>',total:90,count:1}],overBudget:[],topRecommendation:null});
+  assert.equal(messages.length,2);
+  for(const message of messages) {
+    assert.equal(message.to,shared.to);
+    assert.ok(!message.html.includes('<img src=x>'));
+    assert.ok(!message.html.includes('<script>'));
+    assert.ok(!message.html.includes('<b>Food</b>'));
+    assert.ok(message.html.includes('&lt;b&gt;Food&lt;/b&gt;'));
+    assert.ok(message.text.includes('<b>Food</b>'));
+  }
+});
+
 test("reset email preserves the reset URL and escapes untrusted HTML", () => {
   const link = "https://example.com/reset-password?token=abc&email=a%40example.com";
   const message = passwordResetEmail('<img src=x onerror="alert(1)">', link);
